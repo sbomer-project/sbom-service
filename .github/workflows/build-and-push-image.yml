@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     name: Build and Push Image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     env:
       REGISTRY: quay.io
