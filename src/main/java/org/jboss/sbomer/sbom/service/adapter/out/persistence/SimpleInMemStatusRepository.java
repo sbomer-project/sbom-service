@@ -14,7 +14,9 @@ import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -22,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
  * Simulates a database with relationships (One-to-Many) by resolving lists dynamically on fetch.
  */
 @ApplicationScoped
+@Alternative
+@Priority(1)
 @Slf4j
 public class SimpleInMemStatusRepository implements StatusRepository {
 
