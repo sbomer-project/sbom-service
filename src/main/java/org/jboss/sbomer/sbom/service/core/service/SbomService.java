@@ -76,6 +76,13 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
     @Override
     public void processGenerationStatusUpdate(GenerationUpdate generationUpdate) {
         String generationId = generationUpdate.getData().getGenerationId();
+
+        GenerationRecord record = statusRepository.findGenerationById(generationId);
+        if (record == null) {
+            log.warn("Received update for unknown Generation ID: {}. Ignoring.", generationId);
+            return; 
+        }
+
         switch (generationUpdate.getData().getStatus()) {
             case "GENERATING":
                 // update generation status to GENERATING
@@ -114,6 +121,13 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
     @Override
     public void processEnhancementStatusUpdate(EnhancementUpdate enhancementUpdate) {
         String enhancementId = enhancementUpdate.getData().getEnhancementId();
+
+        EnhancementRecord record = statusRepository.findEnhancementById(enhancementId);
+        if (record == null) {
+            log.warn("Received update for unknown Enhancement ID: {}. Ignoring.", enhancementId);
+            return; 
+        }
+
         switch (enhancementUpdate.getData().getStatus()) {
             case "ENHANCING":
                 // update enhancement status to ENHANCING

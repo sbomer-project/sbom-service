@@ -86,6 +86,7 @@ public class GenerationResource {
                 .setEventId(UUID.randomUUID().toString())
                 .setSource("sbomer-rest-api") // Identifies this adapter as the source
                 .setEventVersion("1.0") // As per the schema default
+                .setType("RequestsCreated")
                 .setTimestamp(Instant.now()) // Current time in UTC millis
                 .build();
 
