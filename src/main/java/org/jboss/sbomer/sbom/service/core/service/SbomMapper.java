@@ -2,6 +2,7 @@ package org.jboss.sbomer.sbom.service.core.service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -56,11 +57,10 @@ public class SbomMapper {
     }
 
     public PublisherSpec toPublisherSpec(PublisherRecord publisherRecord) {
-        PublisherSpec spec = PublisherSpec.newBuilder()
+        return PublisherSpec.newBuilder()
                 .setName(publisherRecord.getName())
                 .setVersion(publisherRecord.getVersion())
                 .build();
-        return spec;
     }
 
     /**
@@ -179,21 +179,15 @@ public class SbomMapper {
                 .setVersion(current.getEnhancerVersion())
                 .build();
 
-        List<String> inputSbomUrls;
-        if (lastFinished != null) {
-            // if a previous enhancement has occured, use those enhanced SBOMs as input
-            inputSbomUrls = lastFinished.getEnhancedSbomUrls();
-        } else {
-            // if no previous enhancement has occured, use the base SBOMs from the generation
-            inputSbomUrls = parentGeneration.getGenerationSbomUrls();
-        }
-
+        // if a previous enhancement has occurred, use those enhanced SBOMs as input
+        // if no previous enhancement has occurred, use the base SBOMs from the generation
+        Collection<String> inputSbomUrls = lastFinished != null ? lastFinished.getEnhancedSbomUrls() : parentGeneration.getGenerationSbomUrls();
         EnhancementData enhancementData = EnhancementData.newBuilder()
                 .setEnhancementId(current.getId())
                 .setGenerationId(current.getGenerationId())
                 .setRequestId(current.getRequestId())
                 .setEnhancer(enhancerSpec)
-                .setInputSbomUrls(inputSbomUrls)
+                .setInputSbomUrls(List.copyOf(inputSbomUrls)) // TODO: Convert to Collection?
                 .build();
 
         // EnhancementCreated has been constructed
@@ -227,7 +221,7 @@ public class SbomMapper {
                     .build();
             CompletedGeneration completedGeneration = CompletedGeneration.newBuilder()
                     .setGenerationRequest(generationRequestSpec)
-                    .setFinalSbomUrls(determineFinalUrls(generationRecord))
+                    .setFinalSbomUrls(List.copyOf(determineFinalUrls(generationRecord))) // TODO: Convert to Collection?
                     .build();
 
             completedGenerations.add(completedGeneration);
@@ -246,16 +240,13 @@ public class SbomMapper {
                 .setPublishers(publisherSpecs) // TODO
                 .build();
 
-        RequestsFinished requestsFinished = RequestsFinished.newBuilder()
+        return RequestsFinished.newBuilder()
                 .setContext(context)
                 .setData(requestsFinishedData)
                 .build();
-
-
-        return requestsFinished;
     }
 
-    private List<String> determineFinalUrls(GenerationRecord record) {
+    private Collection<String> determineFinalUrls(GenerationRecord record) {
         // If no enhancements, or list is null, return base generation URLs
         if (record.getEnhancements() == null || record.getEnhancements().isEmpty()) {
             return record.getGenerationSbomUrls();

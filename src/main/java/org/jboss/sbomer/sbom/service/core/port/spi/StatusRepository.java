@@ -98,5 +98,4 @@ public interface StatusRepository {
      * enhancers, it should give the urls of the last enhancement step
      */
     List<String> getFinalSbomUrlsForCompletedGeneration(String generationId);
-
 }

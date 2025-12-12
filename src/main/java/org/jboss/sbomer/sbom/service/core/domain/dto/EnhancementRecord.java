@@ -1,10 +1,11 @@
 package org.jboss.sbomer.sbom.service.core.domain.dto;
 
 import java.time.Instant;
-import java.util.List;
+import java.util.Collection;
 
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,8 +15,9 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class EnhancementRecord {
-
+    @EqualsAndHashCode.Include
     private String id;
     private String enhancerName;
     private String enhancerVersion;
@@ -30,6 +32,6 @@ public class EnhancementRecord {
     private Integer result;
     private String reason;
     private String requestId;
-    private List<String> enhancedSbomUrls;
+    private Collection<String> enhancedSbomUrls;
     private String generationId;
 }
