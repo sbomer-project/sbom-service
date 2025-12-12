@@ -13,11 +13,9 @@ import jakarta.validation.constraints.NotEmpty;
 @Schema(name = "GenerationBatchRequest", description = "The root payload for triggering one or more SBOM generations.")
 public record GenerationRequestsDTO(
         @NotEmpty(message = "At least one generation request must be provided")
-        @Valid
         @Schema(description = "A list of artifacts to generate SBOMs for.", required = true)
-        List<GenerationRequestDTO> generationRequests,
+        List<@Valid GenerationRequestDTO> generationRequests,
 
-        @Valid
         @Schema(description = "Optional list of publishers to notify upon completion.")
-        List<PublisherDTO> publishers
+        List<@Valid PublisherDTO> publishers
 ) {}
