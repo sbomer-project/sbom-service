@@ -34,4 +34,7 @@ podman/kafka-data/
 # local dev instance
 sbomer-local-dev/
 
+# ignore parent helm
+sbomer-platform/
+
 target/
