@@ -127,10 +127,8 @@ Run the local dev from the root of the project repository to set up the minikube
 bash ./hack/setup-local-dev.sh
 ```
 
-Then run the command below to start the podman-compose with the component build:
+Then run the command below to install the helm chart with the component build injected into it:
 
 ```bash
-bash ./hack/run-compose-with-local-build.sh
+bash ./hack/run-helm-with-local-build.sh
 ```
-
-This will spin up the manifest-storage-service on port 8085 along with the latest Quay images of the other components of the system.
