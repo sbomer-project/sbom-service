@@ -6,16 +6,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.EnhancementEntity;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.GenerationEntity;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.RequestEntity;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper.EnhancementMapper;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper.GenerationMapper;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper.StatusMapper;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
-import org.jboss.sbomer.sbom.service.core.domain.entity.EnhancementEntity;
-import org.jboss.sbomer.sbom.service.core.domain.entity.GenerationEntity;
-import org.jboss.sbomer.sbom.service.core.domain.entity.RequestEntity;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
-import org.jboss.sbomer.sbom.service.core.mapper.EnhancementMapper;
-import org.jboss.sbomer.sbom.service.core.mapper.GenerationMapper;
-import org.jboss.sbomer.sbom.service.core.mapper.StatusMapper;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;

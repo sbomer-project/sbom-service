@@ -11,20 +11,19 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.EnhancementEntity;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.GenerationEntity;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.RequestEntity;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper.EnhancementMapper;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper.GenerationMapper;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper.StatusMapper;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
-import org.jboss.sbomer.sbom.service.core.domain.entity.EnhancementEntity;
-import org.jboss.sbomer.sbom.service.core.domain.entity.GenerationEntity;
-import org.jboss.sbomer.sbom.service.core.domain.entity.RequestEntity;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
-import org.jboss.sbomer.sbom.service.core.mapper.EnhancementMapper;
-import org.jboss.sbomer.sbom.service.core.mapper.GenerationMapper;
-import org.jboss.sbomer.sbom.service.core.mapper.StatusMapper;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 
-import io.quarkus.arc.DefaultBean;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -33,7 +32,6 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 
 @ApplicationScoped
-@DefaultBean
 @Transactional
 public class PanacheStatusRepository implements StatusRepository {
     @Inject
@@ -58,7 +56,7 @@ public class PanacheStatusRepository implements StatusRepository {
     @Transactional
     public void saveRequestRecord(RequestRecord record) {
         RequestEntity requestEntity = mapper.toEntity(record);
-        requestRepository.persist(requestEntity);
+        requestEntity = requestRepository.getEntityManager().merge(requestEntity);
         record.setId(requestEntity.getId());
         Optional.ofNullable(record.getGenerationRecords()).ifPresent(generationRecords -> generationRecords.forEach(this::saveGeneration));
     }
@@ -66,8 +64,8 @@ public class PanacheStatusRepository implements StatusRepository {
     @Override
     public RequestRecord findRequestById(String requestId) {
         return requestRepository.findByIdOptional(requestId)
-                .map(mapper::toDto)
-                .orElse(null);
+            .map(mapper::toDto)
+            .orElse(null);
     }
 
     @Override
@@ -78,15 +76,15 @@ public class PanacheStatusRepository implements StatusRepository {
         long totalHits = requestEntityPanacheQuery.count();
         int totalPages = (int) Math.ceil((double) totalHits / pageSize);
         List<RequestRecord> requestRecords = requestEntities.stream()
-                .map(mapper::toDto)
-                .toList();
+            .map(mapper::toDto)
+            .toList();
         return Page.<RequestRecord>builder()
-                .content(requestRecords)
-                .totalHits(totalHits)
-                .totalPages(totalPages)
-                .pageIndex(pageIndex)
-                .pageSize(pageSize)
-                .build();
+            .content(requestRecords)
+            .totalHits(totalHits)
+            .totalPages(totalPages)
+            .pageIndex(pageIndex)
+            .pageSize(pageSize)
+            .build();
     }
 
     // --- GENERATIONS ---
@@ -95,7 +93,7 @@ public class PanacheStatusRepository implements StatusRepository {
     @Transactional
     public void saveGeneration(GenerationRecord record) {
         GenerationEntity generationEntity = generationMapper.toEntity(record);
-        generationRepository.persist(generationEntity);
+        generationEntity = generationRepository.getEntityManager().merge(generationEntity);
         record.setId(generationEntity.getId());
         Optional.ofNullable(record.getEnhancements()).ifPresent(enhancementRecords ->  enhancementRecords.forEach(this::saveEnhancement));
     }
@@ -103,16 +101,16 @@ public class PanacheStatusRepository implements StatusRepository {
     @Override
     public GenerationRecord findGenerationById(String generationId) {
         return generationRepository.findByIdOptional(generationId)
-                .map(generationMapper::toDto)
-                .orElse(null);
+            .map(generationMapper::toDto)
+            .orElse(null);
     }
 
     @Override
     public List<GenerationRecord> findGenerationsByRequestId(String requestId) {
         List<GenerationEntity> generationEntities = generationRepository.list("request.id", requestId);
         return generationEntities.stream()
-                .map(generationMapper::toDto)
-                .toList();
+            .map(generationMapper::toDto)
+            .toList();
     }
 
     @Override
@@ -123,23 +121,23 @@ public class PanacheStatusRepository implements StatusRepository {
         long totalHits = generationEntityPanacheQuery.count();
         int totalPages = (int) Math.ceil((double) totalHits / pageSize);
         List<GenerationRecord> generationRecords = generationEntities.stream()
-                .map(generationMapper::toDto)
-                .toList();
+            .map(generationMapper::toDto)
+            .toList();
         return Page.<GenerationRecord>builder()
-                .content(generationRecords)
-                .totalHits(totalHits)
-                .totalPages(totalPages)
-                .pageIndex(pageIndex)
-                .pageSize(pageSize)
-                .build();
+            .content(generationRecords)
+            .totalHits(totalHits)
+            .totalPages(totalPages)
+            .pageIndex(pageIndex)
+            .pageSize(pageSize)
+            .build();
     }
 
     @Override
     public List<GenerationRecord> findByGenerationStatus(GenerationStatus status) {
         List<GenerationEntity> generationEntities = generationRepository.list("status", status);
         return generationEntities.stream()
-                .map(generationMapper::toDto)
-                .toList();
+            .map(generationMapper::toDto)
+            .toList();
     }
 
     private void mergeEnhancements(GenerationEntity generationEntity, Collection<EnhancementRecord> enhancementRecords) {
@@ -247,23 +245,23 @@ public class PanacheStatusRepository implements StatusRepository {
     @Transactional
     public void saveEnhancement(EnhancementRecord record) {
         EnhancementEntity enhancementEntity = enhancementMapper.toEntity(record);
-        enhancementRepository.persist(enhancementEntity);
+        enhancementEntity = enhancementRepository.getEntityManager().merge(enhancementEntity);
         record.setId(enhancementEntity.getId());
     }
 
     @Override
     public EnhancementRecord findEnhancementById(String enhancementId) {
         return enhancementRepository.findByIdOptional(enhancementId)
-                .map(enhancementMapper::toDto)
-                .orElse(null);
+            .map(enhancementMapper::toDto)
+            .orElse(null);
     }
 
     @Override
     public List<EnhancementRecord> findByEnhancementStatus(EnhancementStatus status) {
         List<EnhancementEntity> enhancementEntities = enhancementRepository.list("status", status);
         return enhancementEntities.stream()
-                .map(enhancementMapper::toDto)
-                .toList();
+            .map(enhancementMapper::toDto)
+            .toList();
     }
 
     @Override

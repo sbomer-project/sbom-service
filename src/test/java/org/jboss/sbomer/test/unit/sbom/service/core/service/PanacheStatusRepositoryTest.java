@@ -156,4 +156,31 @@ public class PanacheStatusRepositoryTest {
         assertThat(updatedGenerationRecord.getEnhancements()).element(0).extracting("id").isEqualTo(enhancementRecord2.getId());
         assertThat(updatedGenerationRecord.getEnhancements()).element(0).extracting("enhancerName").isEqualTo("enahancerName2");
     }
+
+    // This test checks whether saveRequestRecord successfully saves a request that already has an ID defined
+    @Test
+    @TestTransaction
+    void testSaveRequestWithExistingId() {
+        RequestRecord requestRecord = new RequestRecord();
+        requestRecord.setId("dummy-id-123");
+        statusRepository.saveRequestRecord(requestRecord);
+    }
+
+    // This test checks whether saveGeneration successfully saves a generation that already has an ID defined
+    @Test
+    @TestTransaction
+    void testSaveGenerationWithExistingId() {
+        GenerationRecord generationRecord = new GenerationRecord();
+        generationRecord.setId("dummy-id-123");
+        statusRepository.saveGeneration(generationRecord);
+    }
+
+    // This test checks whether saveEnhancement successfully saves a enhancement that already has an ID defined
+    @Test
+    @TestTransaction
+    void testSaveEnhancementWithExistingId() {
+        EnhancementRecord enhancementRecord = new EnhancementRecord();
+        enhancementRecord.setId("dummy-id-123");
+        statusRepository.saveEnhancement(enhancementRecord);
+    }
 }
