@@ -1,7 +1,7 @@
-package org.jboss.sbomer.sbom.service.core.mapper;
+package org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper;
 
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.GenerationEntity;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
-import org.jboss.sbomer.sbom.service.core.domain.entity.GenerationEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

@@ -1,4 +1,4 @@
-package org.jboss.sbomer.sbom.service.core.domain.entity;
+package org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -7,19 +7,7 @@ import java.util.Set;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,7 +23,6 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class EnhancementEntity extends PanacheEntityBase {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @EqualsAndHashCode.Include
     @ToString.Include
     private String id;
@@ -71,4 +58,15 @@ public class EnhancementEntity extends PanacheEntityBase {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "generation_id")
     private GenerationEntity generation;
+
+    // This acts as the "Default" generator.
+    // If we provide an ID (TSID/Test ID), this does nothing.
+    // If we provide null, this generates a UUID.
+    @PrePersist
+    public void ensureId() {
+        if (this.id == null) {
+            this.id = java.util.UUID.randomUUID().toString();
+        }
+    }
+
 }
