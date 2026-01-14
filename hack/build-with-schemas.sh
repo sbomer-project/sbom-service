@@ -13,9 +13,34 @@ COMPONENT_BUILD_CMD="mvn clean package -Dquarkus.profile=dev"
 
 set -e
 
-# Set the environment variables locally for running the tests successfully
-echo "Configuring Podman environment..."
-export DOCKER_HOST="unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
+# Detect the Operating System
+OS="$(uname -s)"
+
+echo "Detected OS: $OS"
+
+if [ "$OS" = "Linux" ]; then
+    # Linux: Point to the local user socket
+    # We use $(id -u) to get the current user ID (usually 1000) automatically
+    export DOCKER_HOST="unix:///run/user/$(id -u)/podman/podman.sock"
+    echo "Configured for Linux Podman: $DOCKER_HOST"
+
+elif [ "$OS" = "Darwin" ]; then
+    # macOS: Check if Podman machine is running first
+    status=$(podman machine info --format "{{.Host.MachineState}}" 2>/dev/null)
+    if [ "$status" != "Running" ]; then
+        echo "Starting Podman machine..."
+        podman machine start
+    fi
+    
+    # macOS: Point to the socket inside the Podman VM
+    export DOCKER_HOST="unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
+    echo "Configured for macOS Podman: $DOCKER_HOST"
+
+else
+    echo "Warning: Unsupported OS ($OS). Assuming Docker/Podman is already in PATH or standard socket location."
+fi
+
+# Common Configuration
 export TESTCONTAINERS_RYUK_DISABLED=true
 
 # Clone the schema repo only if it doesn't exist
