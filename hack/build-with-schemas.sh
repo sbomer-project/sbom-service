@@ -15,13 +15,18 @@ set -e
 
 # Detect the Operating System
 OS="$(uname -s)"
-
 echo "Detected OS: $OS"
 
 if [ "$OS" = "Linux" ]; then
-    # Linux: Point to the local user socket
-    # We use $(id -u) to get the current user ID (usually 1000) automatically
-    export DOCKER_HOST="unix:///run/user/$(id -u)/podman/podman.sock"
+    # Linux: Ask Podman directly where the socket is
+    SOCKET_PATH=$(podman info --format '{{.Host.RemoteSocket.Path}}')
+    
+    if [ -z "$SOCKET_PATH" ]; then
+        echo "Error: Could not determine Podman socket path on Linux."
+        exit 1
+    fi
+
+    export DOCKER_HOST="unix://$SOCKET_PATH"
     echo "Configured for Linux Podman: $DOCKER_HOST"
 
 elif [ "$OS" = "Darwin" ]; then
@@ -37,10 +42,11 @@ elif [ "$OS" = "Darwin" ]; then
     echo "Configured for macOS Podman: $DOCKER_HOST"
 
 else
-    echo "Warning: Unsupported OS ($OS). Assuming Docker/Podman is already in PATH or standard socket location."
+    echo "Warning: Unsupported OS ($OS). Assuming Docker environment is already set."
 fi
 
 # Common Configuration
+# Disable Ryuk (resource reaper) which often causes issues with Podman
 export TESTCONTAINERS_RYUK_DISABLED=true
 
 # Clone the schema repo only if it doesn't exist
