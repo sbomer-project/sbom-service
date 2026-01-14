@@ -13,6 +13,11 @@ COMPONENT_BUILD_CMD="mvn clean package -Dquarkus.profile=dev"
 
 set -e
 
+# Set the environment variables locally for running the tests successfully
+echo "Configuring Podman environment..."
+export DOCKER_HOST="unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
+export TESTCONTAINERS_RYUK_DISABLED=true
+
 # Clone the schema repo only if it doesn't exist
 if [ ! -d "$SCHEMA_REPO_DIR" ]; then
   echo "Cloning schema repo..."
