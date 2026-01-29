@@ -44,6 +44,11 @@ public interface StatusRepository {
     GenerationRecord findGenerationById(String generationId);
 
     /**
+     * Finds all Generations with pagination support.
+     */
+    Page<GenerationRecord> findAllGenerations(int pageIndex, int pageSize);
+
+    /**
      * Find generations by request ID
      */
     List<GenerationRecord> findGenerationsByRequestId(String requestId);
@@ -78,10 +83,21 @@ public interface StatusRepository {
      */
     List<EnhancementRecord> findByEnhancementStatus(EnhancementStatus status);
 
+
+    /**
+     * Find enhancements by generation ID
+     */
+    List<EnhancementRecord> findEnhancementsByGenerationId(String generationId);
+
     /**
      * Saves or updates a EnhancementRecord in the database.
      */
     void updateEnhancement(EnhancementRecord record);
+
+    /**
+     * Finds all Enhancements with pagination support.
+     */
+    Page<EnhancementRecord> findAllEnhancements(int pageIndex, int pageSize);
 
     /**
      * Check if all generations + enhancements are completed for a given generation id (specific generation)

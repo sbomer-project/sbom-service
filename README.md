@@ -70,14 +70,14 @@ The service provides a dedicated Admin API to view the progress of the generatio
 List all Requests:
 
 ```shell script
-curl -s http://localhost:8083/api/v1/admin/requests | jq
+curl -s http://localhost:8083/api/v1/requests | jq
 ```
 
 View Generations for a Request:
 
 ```shell script
 # Replace {requestId} with an ID from the previous command
-curl -s http://localhost:8083/api/v1/admin/requests/{requestId}/generations | jq
+curl -s http://localhost:8083/api/v1/requests/{requestId}/generations | jq
 ```
 
 ### 3.Handling Failures (Retries)
@@ -89,13 +89,13 @@ To recover, an Admin must manually retry the specific failed record.
 Retry a Failed Generation: Resets status to NEW and re-schedules the generation event.
 
 ```shell script
-curl -X POST http://localhost:8083/api/v1/admin/generations/{generationId}/retry
+curl -X POST http://localhost:8083/api/v1/generations/{generationId}/retry
 ```
 
 Retry a Failed Enhancement: Resets status to NEW, resolves the input SBOM from the previous step, and re-schedules the enhancement event.
 
 ```shell
-curl -X POST http://localhost:8083/api/v1/admin/enhancements/{enhancementId}/retry
+curl -X POST http://localhost:8083/api/v1/enhancements/{enhancementId}/retry
 ```
 
 ## Event Flow
@@ -132,3 +132,5 @@ Then run the command below to install the helm chart with the component build in
 ```bash
 bash ./hack/run-helm-with-local-build.sh
 ```
+
+This will spin up the manifest-storage-service on port 8085 along with the latest Quay images of the other components of the system.

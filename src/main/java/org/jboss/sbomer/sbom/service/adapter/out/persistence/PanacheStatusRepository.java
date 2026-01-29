@@ -59,14 +59,15 @@ public class PanacheStatusRepository implements StatusRepository {
         // FIXME: Should use persist instead of merge to assure no accidental overwrites
         requestEntity = requestRepository.getEntityManager().merge(requestEntity);
         record.setId(requestEntity.getId());
-        Optional.ofNullable(record.getGenerationRecords()).ifPresent(generationRecords -> generationRecords.forEach(this::saveGeneration));
+        Optional.ofNullable(record.getGenerationRecords())
+                .ifPresent(generationRecords -> generationRecords.forEach(this::saveGeneration));
     }
 
     @Override
     public RequestRecord findRequestById(String requestId) {
         return requestRepository.findByIdOptional(requestId)
-            .map(mapper::toDto)
-            .orElse(null);
+                .map(mapper::toDto)
+                .orElse(null);
     }
 
     @Override
@@ -77,15 +78,15 @@ public class PanacheStatusRepository implements StatusRepository {
         long totalHits = requestEntityPanacheQuery.count();
         int totalPages = (int) Math.ceil((double) totalHits / pageSize);
         List<RequestRecord> requestRecords = requestEntities.stream()
-            .map(mapper::toDto)
-            .toList();
+                .map(mapper::toDto)
+                .toList();
         return Page.<RequestRecord>builder()
-            .content(requestRecords)
-            .totalHits(totalHits)
-            .totalPages(totalPages)
-            .pageIndex(pageIndex)
-            .pageSize(pageSize)
-            .build();
+                .content(requestRecords)
+                .totalHits(totalHits)
+                .totalPages(totalPages)
+                .pageIndex(pageIndex)
+                .pageSize(pageSize)
+                .build();
     }
 
     // --- GENERATIONS ---
@@ -97,57 +98,79 @@ public class PanacheStatusRepository implements StatusRepository {
         // FIXME: Should use persist instead of merge to assure no accidental overwrites
         generationEntity = generationRepository.getEntityManager().merge(generationEntity);
         record.setId(generationEntity.getId());
-        Optional.ofNullable(record.getEnhancements()).ifPresent(enhancementRecords ->  enhancementRecords.forEach(this::saveEnhancement));
+        Optional.ofNullable(record.getEnhancements())
+                .ifPresent(enhancementRecords -> enhancementRecords.forEach(this::saveEnhancement));
+    }
+
+    @Override
+    public Page<GenerationRecord> findAllGenerations(int pageIndex, int pageSize) {
+        PanacheQuery<GenerationEntity> generationEntityPanacheQuery = generationRepository.findAll(Sort.by("id"));
+        generationEntityPanacheQuery.page(pageIndex, pageSize);
+        List<GenerationEntity> generationEntities = generationEntityPanacheQuery.list();
+        long totalHits = generationEntityPanacheQuery.count();
+        int totalPages = (int) Math.ceil((double) totalHits / pageSize);
+        List<GenerationRecord> generationRecords = generationEntities.stream()
+                .map(generationMapper::toDto)
+                .toList();
+        return Page.<GenerationRecord>builder()
+                .content(generationRecords)
+                .totalHits(totalHits)
+                .totalPages(totalPages)
+                .pageIndex(pageIndex)
+                .pageSize(pageSize)
+                .build();
     }
 
     @Override
     public GenerationRecord findGenerationById(String generationId) {
         return generationRepository.findByIdOptional(generationId)
-            .map(generationMapper::toDto)
-            .orElse(null);
+                .map(generationMapper::toDto)
+                .orElse(null);
     }
 
     @Override
     public List<GenerationRecord> findGenerationsByRequestId(String requestId) {
         List<GenerationEntity> generationEntities = generationRepository.list("request.id", requestId);
         return generationEntities.stream()
-            .map(generationMapper::toDto)
-            .toList();
+                .map(generationMapper::toDto)
+                .toList();
     }
 
     @Override
     public Page<GenerationRecord> findGenerationsByRequestId(String requestId, int pageIndex, int pageSize) {
-        PanacheQuery<GenerationEntity> generationEntityPanacheQuery = generationRepository.find("request.id = ?1", Sort.by("id"), requestId);
+        PanacheQuery<GenerationEntity> generationEntityPanacheQuery = generationRepository.find("request.id = ?1",
+                Sort.by("id"), requestId);
         generationEntityPanacheQuery.page(pageIndex, pageSize);
         List<GenerationEntity> generationEntities = generationEntityPanacheQuery.list();
         long totalHits = generationEntityPanacheQuery.count();
         int totalPages = (int) Math.ceil((double) totalHits / pageSize);
         List<GenerationRecord> generationRecords = generationEntities.stream()
-            .map(generationMapper::toDto)
-            .toList();
+                .map(generationMapper::toDto)
+                .toList();
         return Page.<GenerationRecord>builder()
-            .content(generationRecords)
-            .totalHits(totalHits)
-            .totalPages(totalPages)
-            .pageIndex(pageIndex)
-            .pageSize(pageSize)
-            .build();
+                .content(generationRecords)
+                .totalHits(totalHits)
+                .totalPages(totalPages)
+                .pageIndex(pageIndex)
+                .pageSize(pageSize)
+                .build();
     }
 
     @Override
     public List<GenerationRecord> findByGenerationStatus(GenerationStatus status) {
         List<GenerationEntity> generationEntities = generationRepository.list("status", status);
         return generationEntities.stream()
-            .map(generationMapper::toDto)
-            .toList();
+                .map(generationMapper::toDto)
+                .toList();
     }
 
-    private void mergeEnhancements(GenerationEntity generationEntity, Collection<EnhancementRecord> enhancementRecords) {
+    private void mergeEnhancements(GenerationEntity generationEntity,
+            Collection<EnhancementRecord> enhancementRecords) {
         Map<String, EnhancementEntity> existingById = Optional.ofNullable(generationEntity.getEnhancements())
-            .orElse(Set.of())
-            .stream()
-            .filter(e -> e.getId() != null)
-            .collect(Collectors.toMap(EnhancementEntity::getId, Function.identity()));
+                .orElse(Set.of())
+                .stream()
+                .filter(e -> e.getId() != null)
+                .collect(Collectors.toMap(EnhancementEntity::getId, Function.identity()));
         List<EnhancementEntity> merged = new ArrayList<>();
 
         if (enhancementRecords != null) {
@@ -195,7 +218,8 @@ public class PanacheStatusRepository implements StatusRepository {
         }
     }
 
-    private static void enhancementDtoToEntity(EnhancementRecord enhancementRecord, EnhancementEntity enhancementEntity) {
+    private static void enhancementDtoToEntity(EnhancementRecord enhancementRecord,
+            EnhancementEntity enhancementEntity) {
         enhancementEntity.setEnhancerName(enhancementRecord.getEnhancerName());
         enhancementEntity.setEnhancerVersion(enhancementRecord.getEnhancerVersion());
         enhancementEntity.setIndex(enhancementRecord.getIndex());
@@ -255,22 +279,23 @@ public class PanacheStatusRepository implements StatusRepository {
     @Override
     public EnhancementRecord findEnhancementById(String enhancementId) {
         return enhancementRepository.findByIdOptional(enhancementId)
-            .map(enhancementMapper::toDto)
-            .orElse(null);
+                .map(enhancementMapper::toDto)
+                .orElse(null);
     }
 
     @Override
     public List<EnhancementRecord> findByEnhancementStatus(EnhancementStatus status) {
         List<EnhancementEntity> enhancementEntities = enhancementRepository.list("status", status);
         return enhancementEntities.stream()
-            .map(enhancementMapper::toDto)
-            .toList();
+                .map(enhancementMapper::toDto)
+                .toList();
     }
 
     @Override
     @Transactional
     public void updateEnhancement(EnhancementRecord record) {
-        enhancementRepository.findByIdOptional(record.getId()).ifPresent(enhancementEntity -> enhancementDtoToEntity(record, enhancementEntity));
+        enhancementRepository.findByIdOptional(record.getId())
+                .ifPresent(enhancementEntity -> enhancementDtoToEntity(record, enhancementEntity));
     }
 
     // --- LOGIC HELPERS ---
@@ -278,32 +303,62 @@ public class PanacheStatusRepository implements StatusRepository {
     @Override
     public boolean isGenerationAndEnhancementsFinished(String generationId) {
         return generationRepository.findByIdOptional(generationId)
-            .filter(generationEntity -> generationEntity.getStatus() == GenerationStatus.FINISHED)
-            .map(generationEntity -> {
-                List<EnhancementEntity> children = enhancementRepository.list("generation.id", generationId);
-                return children.isEmpty() || children.stream().allMatch(e -> e.getStatus() == EnhancementStatus.FINISHED);
-            })
-            .orElse(false);
+                .filter(generationEntity -> generationEntity.getStatus() == GenerationStatus.FINISHED)
+                .map(generationEntity -> {
+                    List<EnhancementEntity> children = enhancementRepository.list("generation.id", generationId);
+                    return children.isEmpty()
+                            || children.stream().allMatch(e -> e.getStatus() == EnhancementStatus.FINISHED);
+                })
+                .orElse(false);
     }
 
     @Override
     public boolean isAllGenerationRequestsFinished(String requestId) {
         List<GenerationEntity> generationEntities = generationRepository.list("request.id", requestId);
-        return !generationEntities.isEmpty() && generationEntities.stream().allMatch(generationEntity -> isGenerationAndEnhancementsFinished(generationEntity.getId()));
+        return !generationEntities.isEmpty() && generationEntities.stream()
+                .allMatch(generationEntity -> isGenerationAndEnhancementsFinished(generationEntity.getId()));
     }
 
     @Override
     public List<String> getFinalSbomUrlsForCompletedGeneration(String generationId) {
         return List.copyOf(generationRepository.findByIdOptional(generationId)
-            .map(generationEntity -> {
-                List<EnhancementEntity> children = enhancementRepository.list("generation.id", generationId);
-                return !children.isEmpty() ? children.stream()
-                    .filter(e -> e.getStatus() == EnhancementStatus.FINISHED)
-                    .max(Comparator.comparingInt(EnhancementEntity::getIndex))
-                    .map(EnhancementEntity::getEnhancedSbomUrls)
-                    .orElse(generationEntity.getGenerationSbomUrls()) : generationEntity.getGenerationSbomUrls();
+                .map(generationEntity -> {
+                    List<EnhancementEntity> children = enhancementRepository.list("generation.id", generationId);
+                    return !children.isEmpty() ? children.stream()
+                            .filter(e -> e.getStatus() == EnhancementStatus.FINISHED)
+                            .max(Comparator.comparingInt(EnhancementEntity::getIndex))
+                            .map(EnhancementEntity::getEnhancedSbomUrls)
+                            .orElse(generationEntity.getGenerationSbomUrls())
+                            : generationEntity.getGenerationSbomUrls();
 
-            })
-            .orElseGet(Set::of));
+                })
+                .orElseGet(Set::of));
+    }
+
+    @Override
+    public List<EnhancementRecord> findEnhancementsByGenerationId(String generationId) {
+        List<EnhancementEntity> enhancementEntities = enhancementRepository.list("generation.id", generationId);
+        return enhancementEntities.stream()
+                .map(enhancementMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    public Page<EnhancementRecord> findAllEnhancements(int pageIndex, int pageSize) {
+        PanacheQuery<EnhancementEntity> enhancementEntityPanacheQuery = enhancementRepository.findAll(Sort.by("id"));
+        enhancementEntityPanacheQuery.page(pageIndex, pageSize);
+        List<EnhancementEntity> enhancementEntities = enhancementEntityPanacheQuery.list();
+        long totalHits = enhancementEntityPanacheQuery.count();
+        int totalPages = (int) Math.ceil((double) totalHits / pageSize);
+        List<EnhancementRecord> enhancementRecords = enhancementEntities.stream()
+                .map(enhancementMapper::toDto)
+                .toList();
+        return Page.<EnhancementRecord>builder()
+                .content(enhancementRecords)
+                .totalHits(totalHits)
+                .totalPages(totalPages)
+                .pageIndex(pageIndex)
+                .pageSize(pageSize)
+                .build();
     }
 }

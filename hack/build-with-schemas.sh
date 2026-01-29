@@ -8,8 +8,11 @@ SCHEMA_REPO_DIR="sbomer-contracts"
 SCHEMA_REPO_URL="https://github.com/sbomer-project/${SCHEMA_REPO_DIR}.git"
 # build command for the schemas
 SCHEMA_BUILD_CMD="mvn clean install"
+
+TARGET_PROFILE=${1:-dev}
+echo "Building with Quarkus Profile: $TARGET_PROFILE"
 # build command for the component
-COMPONENT_BUILD_CMD="mvn clean package -Dquarkus.profile=dev"
+COMPONENT_BUILD_CMD="mvn clean package -Dquarkus.profile=$TARGET_PROFILE"
 
 set -e
 
@@ -20,7 +23,7 @@ echo "Detected OS: $OS"
 if [ "$OS" = "Linux" ]; then
     # Linux: Ask Podman directly where the socket is
     SOCKET_PATH=$(podman info --format '{{.Host.RemoteSocket.Path}}')
-    
+
     if [ -z "$SOCKET_PATH" ]; then
         echo "Error: Could not determine Podman socket path on Linux."
         exit 1
@@ -36,7 +39,7 @@ elif [ "$OS" = "Darwin" ]; then
         echo "Starting Podman machine..."
         podman machine start
     fi
-    
+
     # macOS: Point to the socket inside the Podman VM
     export DOCKER_HOST="unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
     echo "Configured for macOS Podman: $DOCKER_HOST"
@@ -46,6 +49,8 @@ else
 fi
 
 # Common Configuration
+# Set Docker API version for compatibility with Podman 5
+export DOCKER_API_VERSION=1.44
 # Disable Ryuk (resource reaper) which often causes issues with Podman
 export TESTCONTAINERS_RYUK_DISABLED=true
 

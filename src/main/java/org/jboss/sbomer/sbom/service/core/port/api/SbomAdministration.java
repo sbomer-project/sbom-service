@@ -3,6 +3,7 @@ package org.jboss.sbomer.sbom.service.core.port.api;
 import java.util.List;
 
 import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
+import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 
@@ -25,6 +26,14 @@ public interface SbomAdministration {
     Page<RequestRecord> fetchRequests(int pageIndex, int pageSize);
 
     /**
+     * Retrieves a single SBOM request by its ID.
+     *
+     * @param requestId The unique ID of the request.
+     * @return The RequestRecord, or null if not found.
+     */
+    RequestRecord getRequest(String requestId);
+
+    /**
      * Fetches a paginated list of generations belonging to a specific request.
      *
      * @param requestId The ID of the parent request.
@@ -32,7 +41,16 @@ public interface SbomAdministration {
      * @param pageSize  The number of records per page.
      * @return A page of GenerationRecords.
      */
-    Page<GenerationRecord> fetchGenerations(String requestId, int pageIndex, int pageSize);
+    Page<GenerationRecord> fetchGenerationsForRequest(String requestId, int pageIndex, int pageSize);
+
+
+    /**
+     * Fetches a paginated list of all generations.
+     * @param pageIndex The 0-based page index.
+     * @param pageSize The number of records per page.
+     * @return A page of GenerationRecords.
+     */
+    Page<GenerationRecord> fetchGenerations(int pageIndex, int pageSize);
 
     /**
      * Retrieves a single generation by its ID.
@@ -63,6 +81,30 @@ public interface SbomAdministration {
      */
     void retryGeneration(String generationId);
 
+
+    /**
+     * Retrieves a single enhancement by its ID.
+     * @param enhancementId The unique ID of the enhancement.
+     * @return The EnhancementRecord, or null if not found.
+     */
+    EnhancementRecord getEnhancement(String enhancementId);
+
+    /**
+     * Retrieves all enhancements for a generation.
+     * @param generationId The ID of the parent generation.
+     * @return A list of all EnhancementRecords for the generation.
+     */
+    List<EnhancementRecord> getEnhancementsForGeneration(String generationId);
+
+
+    /**
+     * Fetches a paginated list of all enhancements.
+     * @param pageIndex The 0-based page index.
+     * @param pageSize The number of records per page.
+     * @return A page of EnhancementRecords.
+     */
+    Page<EnhancementRecord> fetchEnhancements(int pageIndex, int pageSize);
+
     /**
      * Triggers a retry for a specific enhancement that is in a FAILED state.
      * <p>
@@ -75,4 +117,7 @@ public interface SbomAdministration {
      * @throws IllegalStateException    if the enhancement is not in a FAILED state or parent generation is missing.
      */
     void retryEnhancement(String enhancementId);
+
+
+
 }
