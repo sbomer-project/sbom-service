@@ -18,14 +18,12 @@ import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.TestTransaction;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 @QuarkusTest
 @Transactional
-@QuarkusTestResource(KafkaTestResource.class)
 public class PanacheStatusRepositoryTest {
     private static final int PAGE_SIZE = 5;
 
@@ -50,13 +48,14 @@ public class PanacheStatusRepositoryTest {
         assertThat(statusRepositoryRequestById.getCreationDate()).isAfterOrEqualTo(now);
     }
 
-    @Test
+  @Test
     @TestTransaction
     void testPagingAndMapStruct() {
+        long initialCount = statusRepository.findAllRequests(0, 1).getTotalHits();
         IntStream.range(0, NUM_RECORDS).forEach(i -> statusRepository.saveRequestRecord(new RequestRecord()));
         Page<RequestRecord> requestRecordPage = statusRepository.findAllRequests(0, PAGE_SIZE);
         assertThat(requestRecordPage.getContent()).hasSize(PAGE_SIZE);
-        assertThat(requestRecordPage.getTotalHits()).isEqualTo(NUM_RECORDS);
+        assertThat(requestRecordPage.getTotalHits()).isEqualTo(initialCount + NUM_RECORDS);
     }
 
     @Test

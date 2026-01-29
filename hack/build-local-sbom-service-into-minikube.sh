@@ -6,7 +6,7 @@ PROFILE="sbomer"
 TAR_FILE="sbom-service.tar"
 
 echo "--- 1. Building Maven project ---"
-bash ./hack/build-with-schemas.sh
+bash ./hack/build-with-schemas.sh prod
 
 echo "--- 2. Building Container Image ---"
 podman build --format docker -t "$SBOM_SERVICE_IMAGE" -f src/main/docker/Dockerfile.jvm .

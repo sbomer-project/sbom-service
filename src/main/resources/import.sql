@@ -13,6 +13,6 @@ INSERT INTO generations (id, request_id, status) VALUES
   ('dev-gen-002', 'dev-req-126', 'FINISHED');
 
 
-INSERT INTO enhancements (id, generation_id, status, "index") VALUES
+INSERT INTO enhancements (id, generation_id, status, sequence_index) VALUES
   ('dev-enh-001', 'dev-gen-001', 'FINISHED', 1),
   ('dev-enh-002', 'dev-gen-002', 'FINISHED', 1);
