@@ -22,6 +22,11 @@ public interface StatusRepository {
     void saveRequestRecord(RequestRecord record);
 
     /**
+     * Saves or updates a RequestRecord in the database.
+     */
+    void updateRequestRecord(RequestRecord record);
+
+    /**
      * Finds a RequestRecord by its unique ID.
      */
     RequestRecord findRequestById(String requestId);

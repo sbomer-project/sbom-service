@@ -64,6 +64,14 @@ public class PanacheStatusRepository implements StatusRepository {
     }
 
     @Override
+    @Transactional
+    public void updateRequestRecord(RequestRecord record) {
+        requestRepository.findByIdOptional(record.getId()).ifPresent(entity -> {
+            entity.setStatus(record.getStatus());
+        });
+    }
+
+    @Override
     public RequestRecord findRequestById(String requestId) {
         return requestRepository.findByIdOptional(requestId)
                 .map(mapper::toDto)
