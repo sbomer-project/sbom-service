@@ -44,7 +44,7 @@ public class SbomMapper {
         RequestRecord requestRecord = new RequestRecord();
         requestRecord.setId(requestsCreated.getData().getRequestId());
         requestRecord.setPublisherRecords(publisherRecords);
-        requestRecord.setStatus(RequestStatus.NEW);
+        requestRecord.setStatus(RequestStatus.RECEIVED);
         requestRecord.setCreationDate(requestsCreated.getContext().getTimestamp());
         return requestRecord;
     }

@@ -13,6 +13,7 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
+import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.jboss.sbomer.sbom.service.core.port.api.enhancement.EnhancementStatusProcessor;
 import org.jboss.sbomer.sbom.service.core.port.api.generation.GenerationProcessor;
 import org.jboss.sbomer.sbom.service.core.port.api.generation.GenerationStatusProcessor;
@@ -80,7 +81,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
         GenerationRecord record = statusRepository.findGenerationById(generationId);
         if (record == null) {
             log.warn("Received update for unknown Generation ID: {}. Ignoring.", generationId);
-            return; 
+            return;
         }
 
         switch (generationUpdate.getData().getStatus()) {
@@ -114,6 +115,9 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                 failedGenerationRecord.setUpdated(Instant.now());
                 failedGenerationRecord.setFinished(Instant.now());
                 statusRepository.updateGeneration(failedGenerationRecord);
+
+
+                // update request status to FAILED
                 break;
         }
     }
@@ -125,7 +129,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
         EnhancementRecord record = statusRepository.findEnhancementById(enhancementId);
         if (record == null) {
             log.warn("Received update for unknown Enhancement ID: {}. Ignoring.", enhancementId);
-            return; 
+            return;
         }
 
         switch (enhancementUpdate.getData().getStatus()) {
@@ -168,8 +172,15 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
 
         if (statusRepository.isGenerationAndEnhancementsFinished(generationId)) {
             if (statusRepository.isAllGenerationRequestsFinished(requestId)) {
+                // ALL Generations and Enhancements finished
                 RequestRecord requestRecord = statusRepository.findRequestById(requestId);
+                requestRecord.setStatus(RequestStatus.FINISHED);
+
+                // Update request status to FINISHED
+                statusRepository.updateRequestRecord(requestRecord);
+
                 RequestsFinished requestsFinishedEvent = sbomMapper.toRequestsFinishedEvent(requestRecord);
+
                 requestsFinishedNotifier.notify(requestsFinishedEvent);
                 // We have notified that all the generations for a given request have been finished.
                 return;

@@ -37,7 +37,7 @@ public class MapperTest {
         RequestRecord requestRecord = new RequestRecord();
         String requestId = UUID.randomUUID().toString();
         requestRecord.setId(requestId);
-        requestRecord.setStatus(RequestStatus.NEW);
+        requestRecord.setStatus(RequestStatus.RECEIVED);
         requestRecord.setCreationDate(Instant.now());
         GenerationRecord generationRecord = new GenerationRecord();
         String generationId = UUID.randomUUID().toString();
