@@ -37,14 +37,14 @@ public class PanacheStatusRepositoryTest {
     @TestTransaction
     void testSaveAndRetrieveRequest() {
         RequestRecord requestRecord = new RequestRecord();
-        requestRecord.setStatus(RequestStatus.NEW);
+        requestRecord.setStatus(RequestStatus.RECEIVED);
         Instant now = Instant.now();
         requestRecord.setCreationDate(now);
         statusRepository.saveRequestRecord(requestRecord);
         RequestRecord statusRepositoryRequestById = statusRepository.findRequestById(requestRecord.getId());
         assertThat(statusRepositoryRequestById).isNotNull();
         assertThat(statusRepositoryRequestById.getId()).isEqualTo(requestRecord.getId());
-        assertThat(statusRepositoryRequestById.getStatus()).isEqualTo(RequestStatus.NEW);
+        assertThat(statusRepositoryRequestById.getStatus()).isEqualTo(RequestStatus.RECEIVED);
         assertThat(statusRepositoryRequestById.getCreationDate()).isAfterOrEqualTo(now);
     }
 
