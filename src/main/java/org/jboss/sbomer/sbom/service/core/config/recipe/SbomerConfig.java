@@ -14,6 +14,9 @@ public class SbomerConfig {
     private List<RecipeConfig> recipes;
 
     public RecipeConfig getRecipeForType(String targetType) {
+        if (targetType == null) {
+            throw new NullPointerException("Target type cannot be null");
+        }
         return recipes.stream().filter(r -> r.getType().equalsIgnoreCase(targetType))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unsupported target type: " + targetType));

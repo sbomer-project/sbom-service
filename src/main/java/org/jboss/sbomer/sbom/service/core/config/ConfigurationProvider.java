@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ConfigurationProvider {
     private SbomerConfig config;
 
+    private static final List<String> supportedTypes = List.of("CONTAINER_IMAGE", "RPM");
+
     @ConfigProperty(name = "sbomer.config.path", defaultValue = "sbomer-config.yaml")
     String configPath;
 
@@ -48,13 +50,11 @@ public class ConfigurationProvider {
     }
 
     private void validateConfiguration() {
-        // Ensure CONTAINER_IMAGE and RPM are configured
-        List<String> requiredTypes = List.of("CONTAINER_IMAGE", "RPM");
         List<String> configuredTypes = config.getRecipes().stream()
             .map(RecipeConfig::getType)
             .toList();
 
-        for (String required : requiredTypes) {
+        for (String required : supportedTypes) {
             if (!configuredTypes.contains(required)) {
                 throw new IllegalStateException(
                     "Required target type not configured: " + required);
