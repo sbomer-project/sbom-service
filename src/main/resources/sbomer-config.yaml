@@ -1,0 +1,18 @@
+# Provide default configuration
+# Different recipes can be defined for different target types
+
+apiVersion: sbomer.jboss.org/v1
+recipes:
+  - targetType: CONTAINER_IMAGE
+    generator:
+      name: syft-generator
+      version: 1.5.0
+    enhancers: []  # Empty for now, can add later
+
+  - targetType: RPM
+    generator:
+      name: cyclonedx-maven-plugin
+      version: 2.7.9
+    enhancers:
+      - name: rpm-enhancer
+        version: 1.0.0
