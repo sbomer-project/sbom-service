@@ -49,7 +49,6 @@ spec:
               value: {{ .Values.config.kafka.bootstrapServers | quote }}
             - name: SCHEMA_REGISTRY_URL
               value: {{ .Values.config.kafka.schemaRegistryUrl | quote }}
-            {{- if .Values.config.database.existingSecret }}
             - name: DB_URL
               valueFrom:
                 secretKeyRef:
@@ -65,7 +64,6 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.config.database.existingSecret }}
                   key: postgres-password
-            {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
