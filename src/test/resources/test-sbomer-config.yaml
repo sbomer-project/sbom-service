@@ -1,0 +1,24 @@
+apiVersion: sbomer-project/v1
+recipes:
+  - type: CONTAINER_IMAGE
+    generator:
+      name: syft-generator
+      version: 1.5.0
+      options:
+        format: cyclonedx-json
+        scope: all-layers
+    enhancers: []  # Empty for now, can add later
+
+  - type: RPM
+    generator:
+      name: cyclonedx-maven-plugin
+      version: 2.7.9
+      options: # example used options, not real parameters
+        includeSystemScope: "true"
+        outputFormat: json
+    enhancers:
+      - name: rpm-enhancer
+        version: 1.0.0
+        options: # example used options, not real parameters
+          enrichMetadata: "true"
+          validateLicenses: "false"

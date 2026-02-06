@@ -8,7 +8,7 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "cdi", uses = IdMapping.class)
+@Mapper(componentModel = "jakarta-cdi", uses = IdMapping.class)
 public interface EnhancementMapper {
     @Mapping(target = "generationId", source = "generation")
     @Mapping(target = "requestId", source = "request")
