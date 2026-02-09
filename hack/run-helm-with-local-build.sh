@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This script builds the schema, then tears down and rebuilds
-# the local podman-compose development environment.
+# the local helm development environment.
 #
 # It is intended to be run from the root of the project.
 
