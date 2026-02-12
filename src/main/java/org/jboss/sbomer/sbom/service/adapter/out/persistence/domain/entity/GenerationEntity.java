@@ -1,7 +1,9 @@
 package org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
@@ -30,6 +32,12 @@ public class GenerationEntity extends PanacheEntityBase {
     private String generatorName;
 
     private String generatorVersion;
+
+    @ElementCollection
+    @CollectionTable(name = "generation_options", joinColumns = @JoinColumn(name = "generation_id"))
+    @MapKeyColumn(name = "opt_key")
+    @Column(name = "opt_value")
+    private Map<String, String> generatorOptions = new HashMap<>();
 
     private Instant created;
 

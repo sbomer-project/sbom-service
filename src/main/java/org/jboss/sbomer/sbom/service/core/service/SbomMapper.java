@@ -3,6 +3,7 @@ package org.jboss.sbomer.sbom.service.core.service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -89,6 +90,7 @@ public class SbomMapper {
         generationRecord.setId(requestSpec.getGenerationId());
         generationRecord.setGeneratorName(recipe.getGenerator().getName());
         generationRecord.setGeneratorVersion(recipe.getGenerator().getVersion());
+        generationRecord.setGeneratorOptions(recipe.getGenerator().getOptions());
         generationRecord.setCreated(Instant.now()); // Timestamp created here
         generationRecord.setUpdated(Instant.now());
         generationRecord.setStatus(GenerationStatus.NEW);
@@ -106,6 +108,7 @@ public class SbomMapper {
                 enhancementRecord.setId(TsidUtility.createUniqueEnhancementId());
                 enhancementRecord.setEnhancerName(enhancerSpecs.get(i).getName());
                 enhancementRecord.setEnhancerVersion(enhancerSpecs.get(i).getVersion());
+                enhancementRecord.setEnhancerOptions(enhancerSpecs.get(i).getOptions());
                 enhancementRecord.setIndex(i); // Preserve order
                 enhancementRecord.setCreated(Instant.now());
                 enhancementRecord.setUpdated(Instant.now());
@@ -127,11 +130,16 @@ public class SbomMapper {
         GeneratorSpec generatorSpec = GeneratorSpec.newBuilder()
                 .setName(generationRecord.getGeneratorName())
                 .setVersion(generationRecord.getGeneratorVersion())
+                .setOptions(generationRecord.getGeneratorOptions() != null ? generationRecord.getGeneratorOptions() : Collections.emptyMap())
                 .build();
 
         List<EnhancerSpec> enhancerSpecs = generationRecord.getEnhancements().stream()
                 .sorted(Comparator.comparingInt(EnhancementRecord::getIndex))
-                .map(r -> EnhancerSpec.newBuilder().setName(r.getEnhancerName()).setVersion(r.getEnhancerVersion()).build())
+                .map(r -> EnhancerSpec.newBuilder()
+                        .setName(r.getEnhancerName())
+                        .setVersion(r.getEnhancerVersion())
+                        .setOptions(r.getEnhancerOptions() != null ? r.getEnhancerOptions() : Collections.emptyMap())
+                .build())
                 .collect(Collectors.toList());
 
         Recipe recipe = Recipe.newBuilder()
@@ -177,7 +185,18 @@ public class SbomMapper {
         EnhancerSpec enhancerSpec = EnhancerSpec.newBuilder()
                 .setName(current.getEnhancerName())
                 .setVersion(current.getEnhancerVersion())
+                .setOptions(current.getEnhancerOptions() != null ? current.getEnhancerOptions() : Collections.emptyMap())
                 .build();
+
+        // Build and attach generationrequest information in case it is useful for the enhancer
+        GenerationRequestSpec generationRequestSpec = GenerationRequestSpec.newBuilder()
+                .setGenerationId(parentGeneration.getId())
+                .setTarget(Target.newBuilder()
+                        .setType(parentGeneration.getTargetType())
+                        .setIdentifier(parentGeneration.getTargetIdentifier())
+                        .build())        
+                .build();
+
 
         // if a previous enhancement has occurred, use those enhanced SBOMs as input
         // if no previous enhancement has occurred, use the base SBOMs from the generation
@@ -187,6 +206,7 @@ public class SbomMapper {
                 .setGenerationId(current.getGenerationId())
                 .setRequestId(current.getRequestId())
                 .setEnhancer(enhancerSpec)
+                .setGenerationRequest(generationRequestSpec)
                 .setInputSbomUrls(List.copyOf(inputSbomUrls)) // TODO: Convert to Collection?
                 .build();
 

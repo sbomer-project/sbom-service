@@ -1,7 +1,9 @@
 package org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
@@ -30,6 +32,12 @@ public class EnhancementEntity extends PanacheEntityBase {
     private String enhancerName;
 
     private String enhancerVersion;
+
+    @ElementCollection
+    @CollectionTable(name = "enhancement_options", joinColumns = @JoinColumn(name = "enhancement_id"))
+    @MapKeyColumn(name = "opt_key")
+    @Column(name = "opt_value")
+    private Map<String, String> enhancerOptions = new HashMap<>();
 
     private int index;
 
