@@ -1,5 +1,7 @@
 package org.jboss.sbomer.sbom.service.core.domain.dto;
 
+import java.util.Map;
+
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,4 +14,5 @@ public class PublisherRecord {
     private String name;
     @EqualsAndHashCode.Include
     private String version;
+    private Map<String, String> options;
 }

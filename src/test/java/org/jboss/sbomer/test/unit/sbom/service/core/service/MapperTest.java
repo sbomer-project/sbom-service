@@ -39,20 +39,26 @@ public class MapperTest {
         requestRecord.setId(requestId);
         requestRecord.setStatus(RequestStatus.RECEIVED);
         requestRecord.setCreationDate(Instant.now());
+
         GenerationRecord generationRecord = new GenerationRecord();
         String generationId = UUID.randomUUID().toString();
         generationRecord.setId(generationId);
         String generationRequestId = UUID.randomUUID().toString();
         generationRecord.setRequestId(generationRequestId);
         requestRecord.setGenerationRecords(List.of(generationRecord));
+
         RequestEntity requestEntity = statusMapper.toEntity(requestRecord);
-        assertThat(requestEntity.getId()).isEqualTo(requestRecord.getId());
+
+        assertThat(requestEntity.getRequestId()).isEqualTo(requestRecord.getId());
         assertThat(requestEntity.getStatus()).isEqualTo(requestRecord.getStatus());
         assertThat(requestEntity.getGenerations()).hasSize(1);
-        assertThat(requestEntity.getGenerations()).element(0).extracting("id").isEqualTo(generationId);
+
+        assertThat(requestEntity.getGenerations()).element(0).extracting("generationId").isEqualTo(generationId);
+
         RequestRecord statusMapperDto = statusMapper.toDto(requestEntity);
         assertThat(statusMapperDto.getId()).isEqualTo(requestRecord.getId());
         assertThat(statusMapperDto.getGenerationRecords()).hasSize(1);
+        // DTOs still use "id", so this remains extracting("id")
         assertThat(statusMapperDto.getGenerationRecords()).element(0).extracting("id").isEqualTo(generationId);
     }
 
@@ -65,22 +71,27 @@ public class MapperTest {
         generationRecord.setRequestId(requestId);
         generationRecord.setTargetType("image");
         generationRecord.setGenerationSbomUrls(List.of("https://url1", "https://url2"));
+
         EnhancementRecord enhancementRecord = new EnhancementRecord();
         String enhancementId = UUID.randomUUID().toString();
         enhancementRecord.setId(enhancementId);
         enhancementRecord.setGenerationId(generationId);
         generationRecord.setEnhancements(List.of(enhancementRecord));
+
         GenerationEntity generationEntity = generationMapper.toEntity(generationRecord);
-        assertThat(generationEntity.getId()).isEqualTo(generationId);
+
+        assertThat(generationEntity.getGenerationId()).isEqualTo(generationId);
         assertThat(generationEntity.getRequest()).isNotNull();
-        assertThat(generationEntity.getRequest().getId()).isEqualTo(requestId);
+        assertThat(generationEntity.getRequest().getRequestId()).isEqualTo(requestId);
         assertThat(generationEntity.getEnhancements()).hasSize(1);
-        assertThat(generationEntity.getEnhancements()).element(0).extracting("id").isEqualTo(enhancementId);
+        assertThat(generationEntity.getEnhancements()).element(0).extracting("enhancementId").isEqualTo(enhancementId);
         assertThat(generationEntity.getGenerationSbomUrls()).containsExactly("https://url1", "https://url2");
+
         GenerationRecord generationMapperDto = generationMapper.toDto(generationEntity);
         assertThat(generationMapperDto.getId()).isEqualTo(generationId);
         assertThat(generationMapperDto.getRequestId()).isEqualTo(requestId);
         assertThat(generationMapperDto.getEnhancements()).hasSize(1);
+        // DTO uses "id"
         assertThat(generationMapperDto.getEnhancements()).element(0).extracting("id").isEqualTo(enhancementId);
         assertThat(generationMapperDto.getGenerationSbomUrls()).containsExactly("https://url1", "https://url2");
     }
@@ -95,13 +106,16 @@ public class MapperTest {
         String generationId = UUID.randomUUID().toString();
         enhancementRecord.setGenerationId(generationId);
         enhancementRecord.setEnhancedSbomUrls(List.of("https://url1", "https://url2"));
+
         EnhancementEntity enhancementEntity = enhancementMapper.toEntity(enhancementRecord);
-        assertThat(enhancementEntity.getId()).isEqualTo(enhancementId);
+
+        assertThat(enhancementEntity.getEnhancementId()).isEqualTo(enhancementId);
         assertThat(enhancementEntity.getRequest()).isNotNull();
-        assertThat(enhancementEntity.getRequest().getId()).isEqualTo(requestId);
+        assertThat(enhancementEntity.getRequest().getRequestId()).isEqualTo(requestId);
         assertThat(enhancementEntity.getGeneration()).isNotNull();
-        assertThat(enhancementEntity.getGeneration().getId()).isEqualTo(generationId);
+        assertThat(enhancementEntity.getGeneration().getGenerationId()).isEqualTo(generationId);
         assertThat(enhancementEntity.getEnhancedSbomUrls()).containsExactly("https://url1", "https://url2");
+
         EnhancementRecord enhancementMapperDto = enhancementMapper.toDto(enhancementEntity);
         assertThat(enhancementMapperDto.getId()).isEqualTo(enhancementId);
         assertThat(enhancementMapperDto.getRequestId()).isEqualTo(requestId);

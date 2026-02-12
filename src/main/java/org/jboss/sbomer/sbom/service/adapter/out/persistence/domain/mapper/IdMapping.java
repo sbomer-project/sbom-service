@@ -9,33 +9,30 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class IdMapping {
-    public String mapEntityToId(RequestEntity entity) {
-        return Optional.ofNullable(entity).map(RequestEntity::getId).orElse(null);
-    }
 
-    private static RequestEntity newRequestEntity(final String requestId) {
-        RequestEntity entity = new RequestEntity();
-        entity.setId(requestId);
-        return entity;
+    // --- Request Mapping ---
+    public String mapEntityToId(RequestEntity entity) {
+        return Optional.ofNullable(entity).map(RequestEntity::getRequestId).orElse(null);
     }
 
     public RequestEntity mapRequestId(String requestId) {
-        return Optional.ofNullable(requestId).map(IdMapping::newRequestEntity).orElse(null);
-
+        return Optional.ofNullable(requestId).map(id -> {
+            RequestEntity entity = new RequestEntity();
+            entity.setRequestId(id); // Changed from setId
+            return entity;
+        }).orElse(null);
     }
 
-    private static GenerationEntity newGenerationEntity(final String generationId) {
-        GenerationEntity entity = new GenerationEntity();
-        entity.setId(generationId);
-        return entity;
+    // --- Generation Mapping ---
+    public String mapGenerationEntity(GenerationEntity entity) {
+        return Optional.ofNullable(entity).map(GenerationEntity::getGenerationId).orElse(null);
     }
 
     public GenerationEntity mapGenerationId(String generationId) {
-        return Optional.ofNullable(generationId).map(IdMapping::newGenerationEntity).orElse(null);
-
-    }
-
-    public String mapGenerationEntity(GenerationEntity entity) {
-        return Optional.ofNullable(entity).map(GenerationEntity::getId).orElse(null);
+        return Optional.ofNullable(generationId).map(id -> {
+            GenerationEntity entity = new GenerationEntity();
+            entity.setGenerationId(id); // Changed from setId
+            return entity;
+        }).orElse(null);
     }
 }

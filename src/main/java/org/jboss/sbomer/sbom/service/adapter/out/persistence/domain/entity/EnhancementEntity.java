@@ -24,21 +24,29 @@ import lombok.ToString;
 @ToString(onlyExplicitlyIncluded = true)
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class EnhancementEntity extends PanacheEntityBase {
+    // --- SURROGATE KEY ---
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "db_id")
+    private Long dbId;
+
+    // --- BUSINESS KEY ---
+    @Column(name = "enhancement_id", unique = true, nullable = false, updatable = false)
     @EqualsAndHashCode.Include
     @ToString.Include
-    private String id;
+    private String enhancementId;
 
     private String enhancerName;
 
     private String enhancerVersion;
 
     @ElementCollection
-    @CollectionTable(name = "enhancement_options", joinColumns = @JoinColumn(name = "enhancement_id"))
+    @CollectionTable(name = "enhancement_options", joinColumns = @JoinColumn(name = "enhancement_db_id"))
     @MapKeyColumn(name = "opt_key")
     @Column(name = "opt_value")
     private Map<String, String> enhancerOptions = new HashMap<>();
 
+    @Column(name = "index_value")
     private int index;
 
     private Instant created;
@@ -55,26 +63,16 @@ public class EnhancementEntity extends PanacheEntityBase {
     private String reason;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "request_id")
+    @JoinColumn(name = "request_db_id")
     private RequestEntity request;
 
     @ElementCollection
-    @CollectionTable(name = "enhancement_sbom_urls", joinColumns = @JoinColumn(name = "enhancement_id"))
+    @CollectionTable(name = "enhancement_sbom_urls", joinColumns = @JoinColumn(name = "enhancement_db_id"))
     @Column(name = "url")
     private Set<String> enhancedSbomUrls = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "generation_id")
+    @JoinColumn(name = "generation_db_id")
     private GenerationEntity generation;
-
-    // This acts as the "Default" generator.
-    // If we provide an ID (TSID/Test ID), this does nothing.
-    // If we provide null, this generates a UUID.
-    @PrePersist
-    public void ensureId() {
-        if (this.id == null) {
-            this.id = java.util.UUID.randomUUID().toString();
-        }
-    }
 
 }

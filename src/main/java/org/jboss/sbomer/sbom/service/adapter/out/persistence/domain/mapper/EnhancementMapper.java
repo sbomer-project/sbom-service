@@ -10,19 +10,28 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "jakarta-cdi", uses = IdMapping.class)
 public interface EnhancementMapper {
-    @Mapping(target = "generationId", source = "generation")
-    @Mapping(target = "requestId", source = "request")
+
+    @Mapping(target = "id", source = "enhancementId") // Entity.enhancementId -> DTO.id
+    @Mapping(target = "generationId", source = "generation") // Uses IdMapping
+    @Mapping(target = "requestId", source = "request")       // Uses IdMapping
     EnhancementRecord toDto(EnhancementEntity entity);
 
-    @Mapping(target = "generation", source = "generationId")
-    @Mapping(target = "request", source = "requestId")
+    @Mapping(target = "enhancementId", source = "id") // DTO.id -> Entity.enhancementId
+    @Mapping(target = "dbId", ignore = true)          // Ignore DB ID
+    @Mapping(target = "generation", source = "generationId") // Uses IdMapping
+    @Mapping(target = "request", source = "requestId")       // Uses IdMapping
     EnhancementEntity toEntity(EnhancementRecord record);
 
+    // List helpers
     default List<EnhancementRecord> map(List<EnhancementEntity> entities) {
-        return Optional.ofNullable(entities).map(enhancementEntities -> enhancementEntities.stream().map(this::toDto).toList()).orElse(null);
+        return Optional.ofNullable(entities)
+            .map(e -> e.stream().map(this::toDto).toList())
+            .orElse(null);
     }
 
     default List<EnhancementEntity> mapEnhancements(List<EnhancementRecord> records) {
-        return Optional.ofNullable(records).map(enhancementRecords -> enhancementRecords.stream().map(this::toEntity).toList()).orElse(null);
+        return Optional.ofNullable(records)
+            .map(r -> r.stream().map(this::toEntity).toList())
+            .orElse(null);
     }
 }

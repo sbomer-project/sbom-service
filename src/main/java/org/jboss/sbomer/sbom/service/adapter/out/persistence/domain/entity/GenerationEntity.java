@@ -24,17 +24,24 @@ import lombok.ToString;
 @ToString(onlyExplicitlyIncluded = true)
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class GenerationEntity extends PanacheEntityBase {
+    // --- SURROGATE KEY ---
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "db_id")
+    private Long dbId;
+
+    // --- BUSINESS KEY ---
+    @Column(name = "generation_id", unique = true, nullable = false, updatable = false)
     @EqualsAndHashCode.Include
     @ToString.Include
-    private String id;
+    private String generationId;
 
     private String generatorName;
 
     private String generatorVersion;
 
     @ElementCollection
-    @CollectionTable(name = "generation_options", joinColumns = @JoinColumn(name = "generation_id"))
+    @CollectionTable(name = "generation_options", joinColumns = @JoinColumn(name = "generation_db_id"))
     @MapKeyColumn(name = "opt_key")
     @Column(name = "opt_value")
     private Map<String, String> generatorOptions = new HashMap<>();
@@ -53,7 +60,7 @@ public class GenerationEntity extends PanacheEntityBase {
     private String reason;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "request_id")
+    @JoinColumn(name = "request_db_id")
     private RequestEntity request;
 
     private String targetType;
@@ -61,7 +68,7 @@ public class GenerationEntity extends PanacheEntityBase {
     private String targetIdentifier;
 
     @ElementCollection
-    @CollectionTable(name = "generation_sbom_urls", joinColumns = @JoinColumn(name = "generation_id"))
+    @CollectionTable(name = "generation_sbom_urls", joinColumns = @JoinColumn(name = "generation_db_id"))
     @Column(name = "url")
     private Set<String> generationSbomUrls = new HashSet<>();
 
@@ -72,13 +79,4 @@ public class GenerationEntity extends PanacheEntityBase {
         this.enhancements = enhancements != null ? new HashSet<>(enhancements) : new HashSet<>();
     }
 
-    // This acts as the "Default" generator.
-    // If we provide an ID (TSID/Test ID), this does nothing.
-    // If we provide null, this generates a UUID.
-    @PrePersist
-    public void ensureId() {
-        if (this.id == null) {
-            this.id = java.util.UUID.randomUUID().toString();
-        }
-    }
 }
