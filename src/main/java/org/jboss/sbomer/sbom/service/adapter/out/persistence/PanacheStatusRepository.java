@@ -3,6 +3,7 @@ package org.jboss.sbomer.sbom.service.adapter.out.persistence;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -238,6 +239,17 @@ public class PanacheStatusRepository implements StatusRepository {
         enhancementEntity.setResult(enhancementRecord.getResult());
         enhancementEntity.setReason(enhancementRecord.getReason());
 
+        // --- NEW: Sync Enhancer Options (Map) ---
+        if (enhancementRecord.getEnhancerOptions() != null) {
+            if (enhancementEntity.getEnhancerOptions() == null) {
+                enhancementEntity.setEnhancerOptions(new HashMap<>());
+            }
+            enhancementEntity.getEnhancerOptions().clear();
+            enhancementEntity.getEnhancerOptions().putAll(enhancementRecord.getEnhancerOptions());
+        } else {
+            enhancementEntity.setEnhancerOptions(null);
+        }
+
         if (enhancementRecord.getEnhancedSbomUrls() != null) {
             enhancementEntity.getEnhancedSbomUrls().clear();
             enhancementEntity.getEnhancedSbomUrls().addAll(enhancementRecord.getEnhancedSbomUrls());
@@ -261,6 +273,17 @@ public class PanacheStatusRepository implements StatusRepository {
             entity.setTargetType(record.getTargetType());
             entity.setTargetIdentifier(record.getTargetIdentifier());
             entity.setRequest(record.getRequestId() != null ? requestRepository.findById(record.getRequestId()) : null);
+
+            // --- NEW: Sync Generator Options (Map) ---
+            if (record.getGeneratorOptions() != null) {
+                if (entity.getGeneratorOptions() == null) {
+                    entity.setGeneratorOptions(new HashMap<>());
+                }
+                entity.getGeneratorOptions().clear();
+                entity.getGeneratorOptions().putAll(record.getGeneratorOptions());
+            } else {
+                entity.setGeneratorOptions(null);
+            }
 
             if (record.getGenerationSbomUrls() != null) {
                 entity.getGenerationSbomUrls().clear();

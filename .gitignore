@@ -38,3 +38,5 @@ sbomer-local-dev/
 sbomer-platform/
 
 target/
+
+.DS_Store
