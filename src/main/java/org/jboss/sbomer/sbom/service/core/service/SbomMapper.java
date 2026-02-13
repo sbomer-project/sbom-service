@@ -1,11 +1,7 @@
 package org.jboss.sbomer.sbom.service.core.service;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.jboss.sbomer.events.common.*;
@@ -89,6 +85,8 @@ public class SbomMapper {
         generationRecord.setId(requestSpec.getGenerationId());
         generationRecord.setGeneratorName(recipe.getGenerator().getName());
         generationRecord.setGeneratorVersion(recipe.getGenerator().getVersion());
+        Map<String, String> mergedGeneratorOptions = mergeOptions(recipe.getGenerator().getOptions(), requestSpec.getHandlerProvidedOptions());
+        generationRecord.setGeneratorOptions(mergedGeneratorOptions);
         generationRecord.setCreated(Instant.now()); // Timestamp created here
         generationRecord.setUpdated(Instant.now());
         generationRecord.setStatus(GenerationStatus.NEW);
@@ -106,6 +104,8 @@ public class SbomMapper {
                 enhancementRecord.setId(TsidUtility.createUniqueEnhancementId());
                 enhancementRecord.setEnhancerName(enhancerSpecs.get(i).getName());
                 enhancementRecord.setEnhancerVersion(enhancerSpecs.get(i).getVersion());
+                Map<String, String> mergedEnhancerOptions = mergeOptions(enhancerSpecs.get(i).getOptions(), requestSpec.getHandlerProvidedOptions());
+                enhancementRecord.setEnhancerOptions(mergedEnhancerOptions);
                 enhancementRecord.setIndex(i); // Preserve order
                 enhancementRecord.setCreated(Instant.now());
                 enhancementRecord.setUpdated(Instant.now());
@@ -127,11 +127,16 @@ public class SbomMapper {
         GeneratorSpec generatorSpec = GeneratorSpec.newBuilder()
                 .setName(generationRecord.getGeneratorName())
                 .setVersion(generationRecord.getGeneratorVersion())
+                .setOptions(generationRecord.getGeneratorOptions() != null ? generationRecord.getGeneratorOptions() : Collections.emptyMap())
                 .build();
 
         List<EnhancerSpec> enhancerSpecs = generationRecord.getEnhancements().stream()
                 .sorted(Comparator.comparingInt(EnhancementRecord::getIndex))
-                .map(r -> EnhancerSpec.newBuilder().setName(r.getEnhancerName()).setVersion(r.getEnhancerVersion()).build())
+                .map(r -> EnhancerSpec.newBuilder()
+                        .setName(r.getEnhancerName())
+                        .setVersion(r.getEnhancerVersion())
+                        .setOptions(r.getEnhancerOptions() != null ? r.getEnhancerOptions() : Collections.emptyMap())
+                .build())
                 .collect(Collectors.toList());
 
         Recipe recipe = Recipe.newBuilder()
@@ -177,7 +182,18 @@ public class SbomMapper {
         EnhancerSpec enhancerSpec = EnhancerSpec.newBuilder()
                 .setName(current.getEnhancerName())
                 .setVersion(current.getEnhancerVersion())
+                .setOptions(current.getEnhancerOptions() != null ? current.getEnhancerOptions() : Collections.emptyMap())
                 .build();
+
+        // Build and attach generationrequest information in case it is useful for the enhancer
+        GenerationRequestSpec generationRequestSpec = GenerationRequestSpec.newBuilder()
+                .setGenerationId(parentGeneration.getId())
+                .setTarget(Target.newBuilder()
+                        .setType(parentGeneration.getTargetType())
+                        .setIdentifier(parentGeneration.getTargetIdentifier())
+                        .build())
+                .build();
+
 
         // if a previous enhancement has occurred, use those enhanced SBOMs as input
         // if no previous enhancement has occurred, use the base SBOMs from the generation
@@ -187,6 +203,7 @@ public class SbomMapper {
                 .setGenerationId(current.getGenerationId())
                 .setRequestId(current.getRequestId())
                 .setEnhancer(enhancerSpec)
+                .setGenerationRequest(generationRequestSpec)
                 .setInputSbomUrls(List.copyOf(inputSbomUrls)) // TODO: Convert to Collection?
                 .build();
 
@@ -258,6 +275,24 @@ public class SbomMapper {
                 .max(Comparator.comparingInt(EnhancementRecord::getIndex))
                 .map(EnhancementRecord::getEnhancedSbomUrls)
                 .orElse(record.getGenerationSbomUrls());
+    }
+
+    /**
+     * Helper to merge existing options with handler-provided options using a prefix.
+     */
+    private Map<String, String> mergeOptions(Map<String, String> existingOptions, Map<String, String> handlerOptions) {
+        // Start with a copy of existing options (handling null safely)
+        Map<String, String> merged = (existingOptions != null) ? new HashMap<>(existingOptions) : new HashMap<>();
+
+        // Append handler options if present
+        if (handlerOptions != null) {
+            handlerOptions.forEach((key, value) -> {
+                // we put a handler-* prefix for the key to specify it comes from the handler and not the generator or enhancer
+                merged.put("handler-" + key, value);
+            });
+        }
+
+        return merged;
     }
 
 }

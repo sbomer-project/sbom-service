@@ -2,6 +2,7 @@ package org.jboss.sbomer.sbom.service.core.domain.dto;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Map;
 
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 
@@ -17,6 +18,11 @@ public class GenerationRecord {
     private String id;
     private String generatorName;
     private String generatorVersion;
+    /**
+     * Configuration options specific to the generator (e.g., specific flags, exclusions).
+     * Mapped from the configuration recipe.
+     */
+    private Map<String, String> generatorOptions;
     private Instant created;
     private Instant updated;
     private Instant finished;

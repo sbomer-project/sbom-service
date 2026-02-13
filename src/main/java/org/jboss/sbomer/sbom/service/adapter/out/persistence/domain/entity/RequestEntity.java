@@ -8,7 +8,6 @@ import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,42 +22,28 @@ import lombok.ToString;
 @ToString(onlyExplicitlyIncluded = true)
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class RequestEntity extends PanacheEntityBase {
+    // --- SURROGATE KEY (Private DB ID) ---
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "db_id")
+    private Long dbId;
+
+    // --- BUSINESS KEY (Public TSID) ---
+    @Column(name = "request_id", unique = true, nullable = false, updatable = false)
     @EqualsAndHashCode.Include
     @ToString.Include
-    private String id;
+    private String requestId;
 
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<GenerationEntity> generations = new HashSet<>();
 
-    @ElementCollection
-    @CollectionTable(name = "request_publishers", joinColumns = @JoinColumn(name = "request_id"))
-    private Set<PublisherEmbeddable> publishers = new HashSet<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_db_id") // This puts the foreign key in the publisher table
+    private Set<PublisherEntity> publishers = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     private RequestStatus status;
 
     private Instant creationDate;
-
-    @Embeddable
-    @Data
-    @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
-    public static class PublisherEmbeddable {
-        @EqualsAndHashCode.Include
-        private String name;
-
-        @EqualsAndHashCode.Include
-        private String version;
-    }
-
-    // This acts as the "Default" generator.
-    // If we provide an ID (TSID/Test ID), this does nothing.
-    // If we provide null, this generates a UUID.
-    @PrePersist
-    public void ensureId() {
-        if (this.id == null) {
-            this.id = java.util.UUID.randomUUID().toString();
-        }
-    }
 
 }
