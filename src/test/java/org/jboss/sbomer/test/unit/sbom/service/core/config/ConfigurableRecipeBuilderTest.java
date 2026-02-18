@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.jboss.sbomer.events.orchestration.Recipe;
-import org.jboss.sbomer.sbom.service.adapter.out.ConfigurableRecipeBuilder;
+import org.jboss.sbomer.sbom.service.adapter.out.recipe.ConfigurableRecipeBuilder;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;

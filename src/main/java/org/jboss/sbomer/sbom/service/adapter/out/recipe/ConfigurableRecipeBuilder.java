@@ -1,4 +1,4 @@
-package org.jboss.sbomer.sbom.service.adapter.out;
+package org.jboss.sbomer.sbom.service.adapter.out.recipe;
 
 import java.util.Collections;
 import java.util.List;
@@ -7,10 +7,9 @@ import java.util.stream.Collectors;
 import org.jboss.sbomer.events.common.EnhancerSpec;
 import org.jboss.sbomer.events.common.GeneratorSpec;
 import org.jboss.sbomer.events.orchestration.Recipe;
-import org.jboss.sbomer.sbom.service.core.config.ConfigurationProvider;
-import org.jboss.sbomer.sbom.service.core.config.recipe.EnhancerConfig;
-import org.jboss.sbomer.sbom.service.core.config.recipe.GeneratorConfig;
-import org.jboss.sbomer.sbom.service.core.config.recipe.RecipeConfig;
+import org.jboss.sbomer.sbom.service.adapter.out.recipe.config.EnhancerConfig;
+import org.jboss.sbomer.sbom.service.adapter.out.recipe.config.GeneratorConfig;
+import org.jboss.sbomer.sbom.service.adapter.out.recipe.config.RecipeConfig;
 import org.jboss.sbomer.sbom.service.core.port.spi.RecipeBuilder;
 
 import jakarta.enterprise.context.ApplicationScoped;

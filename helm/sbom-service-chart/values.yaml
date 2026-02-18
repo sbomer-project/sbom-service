@@ -22,6 +22,20 @@ config:
     # We need the name of the database secret to read from
     existingSecret: ""
 
+# Configuration for the SBOM Service
+recipeConfig:
+  # The path where the app looks for the recipe config.
+  path: "/etc/sbomer/recipe-config.yaml"
+
+  # Leave this EMPTY to use the default internal recipe config (classpath).
+  # If we populate this, a ConfigMap will be generated and mounted.
+  # Should be overriden by parent chart that is aware of what components are getting deployed and
+  # should represent them in the recipe configuration
+  override: {}
+    # recipes:
+    #   - type: "maven"
+    #     generator: ...
+
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 # This is to override the chart name.
