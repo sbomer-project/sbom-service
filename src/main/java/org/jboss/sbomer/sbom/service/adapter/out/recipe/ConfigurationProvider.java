@@ -1,12 +1,14 @@
-package org.jboss.sbomer.sbom.service.core.config;
+package org.jboss.sbomer.sbom.service.adapter.out.recipe;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.sbomer.sbom.service.core.config.recipe.RecipeConfig;
-import org.jboss.sbomer.sbom.service.core.config.recipe.SbomerConfig;
+import org.jboss.sbomer.sbom.service.adapter.out.recipe.config.RecipeConfig;
+import org.jboss.sbomer.sbom.service.adapter.out.recipe.config.SbomerConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -38,12 +40,26 @@ public class ConfigurationProvider {
 
     private void loadConfiguration() throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        InputStream inputStream = getClass().getClassLoader()
-            .getResourceAsStream(configPath);
-        if (inputStream == null) {
-            throw new FileNotFoundException("Config file not found: " + configPath);
+        InputStream inputStream = null;
+
+        // Check if the path exists on the actual file system
+        Path externalFile = Path.of(configPath);
+        if (Files.exists(externalFile)) {
+            log.info("Loading configuration from file system: {}", externalFile.toAbsolutePath());
+            inputStream = Files.newInputStream(externalFile);
+        } else {
+            // Fallback to classpath
+            log.info("Configuration not found at '{}', checking classpath...", configPath);
+            inputStream = getClass().getClassLoader().getResourceAsStream(configPath);
         }
-        config = mapper.readValue(inputStream, SbomerConfig.class);
+
+        if (inputStream == null) {
+            throw new FileNotFoundException("Config file not found on file system or classpath: " + configPath);
+        }
+
+        try (InputStream is = inputStream) {
+            config = mapper.readValue(is, SbomerConfig.class);
+        }
     }
 
     private void validateConfiguration() {

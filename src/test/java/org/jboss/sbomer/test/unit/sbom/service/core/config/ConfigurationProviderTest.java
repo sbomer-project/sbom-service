@@ -3,8 +3,8 @@ package org.jboss.sbomer.test.unit.sbom.service.core.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.jboss.sbomer.sbom.service.core.config.ConfigurationProvider;
-import org.jboss.sbomer.sbom.service.core.config.recipe.RecipeConfig;
+import org.jboss.sbomer.sbom.service.adapter.out.recipe.ConfigurationProvider;
+import org.jboss.sbomer.sbom.service.adapter.out.recipe.config.RecipeConfig;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;

@@ -1,4 +1,4 @@
-package org.jboss.sbomer.sbom.service.core.config.recipe;
+package org.jboss.sbomer.sbom.service.adapter.out.recipe.config;
 
 import java.util.Map;
 

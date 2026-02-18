@@ -1,0 +1,12 @@
+{{- if .Values.recipeConfig.override }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sbom-service-chart.fullname" . }}-config
+  labels:
+    {{- include "sbom-service-chart.labels" . | nindent 4 }}
+data:
+  # The key name matches the filename we want in the volume
+  recipe-config.yaml: |
+    {{- toYaml .Values.recipeConfig.override | nindent 4 }}
+{{- end }}
