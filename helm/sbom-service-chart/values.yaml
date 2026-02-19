@@ -15,6 +15,9 @@ image:
 
 # --- APPLICATION CONFIG ---
 config:
+  otel:
+    protocol: grpc
+    endpoint: "" # placeholder
   kafka:
     bootstrapServers: "kafka:9092"
     schemaRegistryUrl: "http://schema-registry:8080/apis/registry/v2"

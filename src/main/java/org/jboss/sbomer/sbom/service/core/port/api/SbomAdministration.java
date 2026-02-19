@@ -76,8 +76,6 @@ public interface SbomAdministration {
      * </p>
      *
      * @param generationId The unique ID of the generation to retry.
-     * @throws IllegalArgumentException if the generation is not found.
-     * @throws IllegalStateException    if the generation is not in a FAILED state.
      */
     void retryGeneration(String generationId);
 
@@ -113,8 +111,6 @@ public interface SbomAdministration {
      * </p>
      *
      * @param enhancementId The unique ID of the enhancement to retry.
-     * @throws IllegalArgumentException if the enhancement is not found.
-     * @throws IllegalStateException    if the enhancement is not in a FAILED state or parent generation is missing.
      */
     void retryEnhancement(String enhancementId);
 
