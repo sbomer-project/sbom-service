@@ -64,8 +64,8 @@ public class SbomResource {
     @GET
     @Path("/requests")
     @Operation(summary = "List Requests", description = "Paginated list of high-level SBOM generation requests.")
-    public Response fetchRequests(@QueryParam("page") @DefaultValue("0") int page,
-                                  @QueryParam("size") @DefaultValue("20") int size) {
+    public Response fetchRequests(@QueryParam("pageIndex") @DefaultValue("0") int page,
+             @QueryParam("pageSize") @DefaultValue("10") int size) {
         Page<RequestRecord> result = sbomAdministration.fetchRequests(page, size);
         return Response.ok(result).build();
     }
@@ -87,8 +87,8 @@ public class SbomResource {
     @Path("/requests/{requestId}/generations")
     @Operation(summary = "List Generations for Request", description = "Paginated list of generations belonging to a specific request ID.")
     public Response fetchGenerations(@PathParam("requestId") String requestId,
-                                     @QueryParam("page") @DefaultValue("0") int page,
-                                     @QueryParam("size") @DefaultValue("20") int size) {
+            @QueryParam("pageIndex") @DefaultValue("0") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int size) {
         Page<GenerationRecord> result = sbomAdministration.fetchGenerationsForRequest(requestId, page, size);
         return Response.ok(result).build();
     }
@@ -108,12 +108,11 @@ public class SbomResource {
         return Response.ok(records).build();
     }
 
-
     @GET
     @Path("/generations")
     @Operation(summary = "List Generations", description = "Paginated list of generations.")
-    public Response fetchGenerations(@QueryParam("page") @DefaultValue("0") int page,
-                                  @QueryParam("size") @DefaultValue("20") int size) {
+    public Response fetchGenerations(@QueryParam("pageIndex") @DefaultValue("0") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int size) {
         Page<GenerationRecord> result = sbomAdministration.fetchGenerations(page, size);
         return Response.ok(result).build();
     }
@@ -131,7 +130,6 @@ public class SbomResource {
         return Response.ok(record).build();
     }
 
-
     // --- ACTION ENDPOINTS ---
     // todo auth
     @POST
@@ -145,7 +143,6 @@ public class SbomResource {
         sbomAdministration.retryGeneration(generationId);
         return Response.accepted().entity("Retry scheduled").build();
     }
-
 
     @GET
     @Path("/enhancements/{id}")
@@ -174,8 +171,8 @@ public class SbomResource {
     @GET
     @Path("/enhancements")
     @Operation(summary = "List Enhancements", description = "Paginated list of enhancements.")
-    public Response fetchEnhancements(@QueryParam("page") @DefaultValue("0") int page,
-                                  @QueryParam("size") @DefaultValue("20") int size) {
+    public Response fetchEnhancements(@QueryParam("pageIndex") @DefaultValue("0") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int size) {
         Page<EnhancementRecord> result = sbomAdministration.fetchEnhancements(page, size);
         return Response.ok(result).build();
     }
@@ -196,15 +193,8 @@ public class SbomResource {
     @Path("/generations")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(
-            summary = "Trigger SBOM Generation",
-            description = "Accepts a manifest of generation requests and publishers, converts them to internal events, and schedules them."
-    )
-    @APIResponse(
-            responseCode = "202",
-            description = "Request accepted. Returns the batch Request ID.",
-            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(example = "{\"id\": \"req-12345\"}"))
-    )
+    @Operation(summary = "Trigger SBOM Generation", description = "Accepts a manifest of generation requests and publishers, converts them to internal events, and schedules them.")
+    @APIResponse(responseCode = "202", description = "Request accepted. Returns the batch Request ID.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(example = "{\"id\": \"req-12345\"}")))
     @APIResponse(responseCode = "400", description = "Invalid payload or validation error")
     public Response triggerGeneration(@Valid GenerationRequestsDTO request) {
 
@@ -217,13 +207,14 @@ public class SbomResource {
         generationProcessor.processGenerations(requestsCreatedEvent);
 
         // 3. Return a 202 Accepted response, as this is an async process.
-        //    We return the batch RequestId so the user can track it.
+        // We return the batch RequestId so the user can track it.
         String requestId = requestsCreatedEvent.getData().getRequestId();
         return Response.accepted(Collections.singletonMap("id", requestId)).build();
     }
 
     /**
-     * Helper method to map our public DTOs to the internal Avro-generated event object.
+     * Helper method to map our public DTOs to the internal Avro-generated event
+     * object.
      */
     private RequestsCreated toRequestsCreatedEvent(GenerationRequestsDTO request) {
         String newRequestId = TsidUtility.createUniqueGenerationRequestId();
