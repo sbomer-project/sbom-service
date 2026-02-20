@@ -12,11 +12,15 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
+import org.jboss.sbomer.sbom.service.core.domain.exception.EntityNotFoundException;
+import org.jboss.sbomer.sbom.service.core.domain.exception.InvalidRetryStateException;
 import org.jboss.sbomer.sbom.service.core.port.api.SbomAdministration;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 import org.jboss.sbomer.sbom.service.core.port.spi.enhancement.EnhancementScheduler;
 import org.jboss.sbomer.sbom.service.core.port.spi.generation.GenerationScheduler;
 
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -73,16 +77,17 @@ public class SbomAdminService implements SbomAdministration {
 
     // --- WRITE OPERATIONS (Commands) ---
 
-    public void retryGeneration(String generationId) {
+    @WithSpan
+    public void retryGeneration(@SpanAttribute("generation.id") String generationId) {
         // Repository implementation handles locking/transaction here
         GenerationRecord record = statusRepository.findGenerationById(generationId);
 
         if (record == null) {
-            throw new IllegalArgumentException("Generation with ID " + generationId + " not found");
+            throw new EntityNotFoundException("Generation with ID " + generationId + " not found");
         }
 
         if (GenerationStatus.FAILED != record.getStatus()) {
-            throw new IllegalStateException("Cannot retry generation in status: " + record.getStatus()
+            throw new InvalidRetryStateException("Cannot retry generation in status: " + record.getStatus()
                     + ". Only FAILED generations can be retried.");
         }
 
@@ -122,22 +127,23 @@ public class SbomAdminService implements SbomAdministration {
         return statusRepository.findEnhancementById(enhancementId);
     }
 
-    public void retryEnhancement(String enhancementId) {
+    @WithSpan
+    public void retryEnhancement(@SpanAttribute("enhancement.id") String enhancementId) {
         // Repository implementation handles locking/transaction here
         EnhancementRecord record = statusRepository.findEnhancementById(enhancementId);
 
         if (record == null) {
-            throw new IllegalArgumentException("Enhancement with ID " + enhancementId + " not found");
+            throw new EntityNotFoundException("Enhancement with ID " + enhancementId + " not found");
         }
 
         if (EnhancementStatus.FAILED != record.getStatus()) {
-            throw new IllegalStateException("Cannot retry enhancement in status: " + record.getStatus()
+            throw new InvalidRetryStateException("Cannot retry enhancement in status: " + record.getStatus()
                     + ". Only FAILED enhancements can be retried.");
         }
 
         GenerationRecord parentGeneration = statusRepository.findGenerationById(record.getGenerationId());
         if (parentGeneration == null) {
-            throw new IllegalStateException("Cannot retry enhancement because parent generation is missing.");
+            throw new InvalidRetryStateException("Cannot retry enhancement because parent generation is missing.");
         }
 
         log.info("Retrying enhancement: {}", enhancementId);

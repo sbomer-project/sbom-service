@@ -130,6 +130,7 @@ helm upgrade --install sbomer-release "./$PLATFORM_DIR" \
     --set global.includeKafka=true \
     --set global.includeApicurio=true \
     --set global.includeApiGateway=true \
+    --set global.includeOtelLgtm=true \
     --set sbom-service-chart.image.repository=localhost/sbom-service \
     --set sbom-service-chart.image.tag=latest \
     --set sbom-service-chart.image.pullPolicy=Never

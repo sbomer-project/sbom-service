@@ -142,17 +142,8 @@ public class SbomResource {
     @APIResponse(responseCode = "409", description = "Conflict: Generation is not in FAILED state")
     @APIResponse(responseCode = "500", description = "Internal server error")
     public Response retryGeneration(@PathParam("id") String generationId) {
-        try {
-            sbomAdministration.retryGeneration(generationId);
-            return Response.accepted().entity("Retry scheduled").build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
-        } catch (IllegalStateException e) {
-            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
-        } catch (Exception e) {
-            log.error("Failed to retry generation {}", generationId, e);
-            return Response.serverError().entity("Internal error").build();
-        }
+        sbomAdministration.retryGeneration(generationId);
+        return Response.accepted().entity("Retry scheduled").build();
     }
 
 
@@ -197,17 +188,8 @@ public class SbomResource {
     @APIResponse(responseCode = "404", description = "Enhancement ID not found")
     @APIResponse(responseCode = "409", description = "Conflict: Enhancement not FAILED or parent generation missing")
     public Response retryEnhancement(@PathParam("id") String enhancementId) {
-        try {
-            sbomAdministration.retryEnhancement(enhancementId);
-            return Response.accepted().entity("Retry scheduled").build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
-        } catch (IllegalStateException e) {
-            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
-        } catch (Exception e) {
-            log.error("Failed to retry enhancement {}", enhancementId, e);
-            return Response.serverError().entity("Internal error").build();
-        }
+        sbomAdministration.retryEnhancement(enhancementId);
+        return Response.accepted().entity("Retry scheduled").build();
     }
 
     @POST

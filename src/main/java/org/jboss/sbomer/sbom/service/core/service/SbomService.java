@@ -24,6 +24,7 @@ import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 import org.jboss.sbomer.sbom.service.core.port.spi.enhancement.EnhancementScheduler;
 import org.jboss.sbomer.sbom.service.core.port.spi.generation.GenerationScheduler;
 
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +53,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
     }
 
     // Create recipes for each generation requested from the source and schedule them to be generated
+    @WithSpan
     @Override
     public void processGenerations(RequestsCreated requestsCreatedEvent) {
         // Get list of generation requests
@@ -74,6 +76,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
     }
 
     // Process the incoming updates from the generators
+    @WithSpan
     @Override
     public void processGenerationStatusUpdate(GenerationUpdate generationUpdate) {
         String generationId = generationUpdate.getData().getGenerationId();
@@ -122,6 +125,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
         }
     }
 
+    @WithSpan
     @Override
     public void processEnhancementStatusUpdate(EnhancementUpdate enhancementUpdate) {
         String enhancementId = enhancementUpdate.getData().getEnhancementId();
