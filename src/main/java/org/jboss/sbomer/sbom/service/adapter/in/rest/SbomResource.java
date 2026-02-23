@@ -85,7 +85,7 @@ public class SbomResource {
     @GET
     @Path("/requests")
     @Operation(summary = "List Requests", description = "Paginated list of high-level SBOM generation requests.")
-    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Page.class)))
     @APIResponse(responseCode = "400", description = "Invalid pagination parameters", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response fetchRequests(
@@ -112,7 +112,7 @@ public class SbomResource {
     @GET
     @Path("/requests/{requestId}/generations")
     @Operation(summary = "List Generations for Request", description = "Paginated list of generations belonging to a specific request ID.")
-    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Page.class)))
     @APIResponse(responseCode = "400", description = "Invalid request ID or pagination parameters", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response fetchGenerations(
@@ -126,7 +126,7 @@ public class SbomResource {
     @GET
     @Path("/requests/{requestId}/generations/all")
     @Operation(summary = "Fetch All Generations", description = "Get a full list of generations for a request (non-paginated).")
-    @APIResponse(responseCode = "200", description = "Success - returns all generations (may be empty list)", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "200", description = "Success - returns all generations (may be empty list)", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = GenerationRecord[].class)))
     @APIResponse(responseCode = "400", description = "Invalid request ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response getAllGenerationsForRequest(
@@ -138,7 +138,7 @@ public class SbomResource {
     @GET
     @Path("/generations")
     @Operation(summary = "List Generations", description = "Paginated list of generations.")
-    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Page.class)))
     @APIResponse(responseCode = "400", description = "Invalid pagination parameters", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response fetchGenerations(
@@ -205,7 +205,7 @@ public class SbomResource {
     @GET
     @Path("/enhancements/generation/{generationId}")
     @Operation(summary = "List Enhancements for Generation", description = "Get all enhancements for a specific generation ID.")
-    @APIResponse(responseCode = "200", description = "Found", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "200", description = "Success - returns all enhancements (may be empty list)", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = EnhancementRecord[].class)))
     @APIResponse(responseCode = "400", description = "Invalid generation ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response getEnhancementsForGeneration(
@@ -217,7 +217,7 @@ public class SbomResource {
     @GET
     @Path("/enhancements")
     @Operation(summary = "List Enhancements", description = "Paginated list of enhancements.")
-    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Page.class)))
     @APIResponse(responseCode = "400", description = "Invalid pagination parameters", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response fetchEnhancements(
