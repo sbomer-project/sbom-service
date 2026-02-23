@@ -85,6 +85,9 @@ public class SbomResource {
     @GET
     @Path("/requests")
     @Operation(summary = "List Requests", description = "Paginated list of high-level SBOM generation requests.")
+    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "400", description = "Invalid pagination parameters", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response fetchRequests(
             @QueryParam("pageIndex") @DefaultValue("0") @Min(value = 0, message = "Page index must be non-negative") int page,
             @QueryParam("pageSize") @DefaultValue("10") @Min(value = 1, message = "Page size must be at least 1") @Max(value = 100, message = "Page size cannot exceed 100") int size) {
@@ -109,6 +112,9 @@ public class SbomResource {
     @GET
     @Path("/requests/{requestId}/generations")
     @Operation(summary = "List Generations for Request", description = "Paginated list of generations belonging to a specific request ID.")
+    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "400", description = "Invalid request ID or pagination parameters", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response fetchGenerations(
             @PathParam("requestId") @NotBlank(message = "Request ID cannot be blank") String requestId,
             @QueryParam("pageIndex") @DefaultValue("0") @Min(value = 0, message = "Page index must be non-negative") int page,
@@ -120,22 +126,21 @@ public class SbomResource {
     @GET
     @Path("/requests/{requestId}/generations/all")
     @Operation(summary = "Fetch All Generations", description = "Get a full list of generations for a request (non-paginated).")
+    @APIResponse(responseCode = "200", description = "Success - returns all generations (may be empty list)", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "400", description = "Invalid request ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response getAllGenerationsForRequest(
             @PathParam("requestId") @NotBlank(message = "Request ID cannot be blank") String requestId) {
         List<GenerationRecord> records = sbomAdministration.getGenerationsForRequest(requestId);
-
-        if (records == null || records.isEmpty()) {
-            // Maybe return 404 if the request ID doesn't exist,
-            // just empty list 200 is okay for now
-            // TODO throw an error
-        }
-
         return Response.ok(records).build();
     }
 
     @GET
     @Path("/generations")
     @Operation(summary = "List Generations", description = "Paginated list of generations.")
+    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "400", description = "Invalid pagination parameters", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response fetchGenerations(
             @QueryParam("pageIndex") @DefaultValue("0") @Min(value = 0, message = "Page index must be non-negative") int page,
             @QueryParam("pageSize") @DefaultValue("10") @Min(value = 1, message = "Page size must be at least 1") @Max(value = 100, message = "Page size cannot exceed 100") int size) {
@@ -212,6 +217,9 @@ public class SbomResource {
     @GET
     @Path("/enhancements")
     @Operation(summary = "List Enhancements", description = "Paginated list of enhancements.")
+    @APIResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "400", description = "Invalid pagination parameters", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response fetchEnhancements(
             @QueryParam("pageIndex") @DefaultValue("0") @Min(value = 0, message = "Page index must be non-negative") int page,
             @QueryParam("pageSize") @DefaultValue("10") @Min(value = 1, message = "Page size must be at least 1") @Max(value = 100, message = "Page size cannot exceed 100") int size) {
