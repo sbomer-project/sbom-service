@@ -163,8 +163,19 @@ public class SbomResource {
     @APIResponse(responseCode = "500", description = "Internal server error")
     public Response retryGeneration(
             @PathParam("id") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
+        
+        log.debug("Retry requested for generation: {}", generationId);
+        
         sbomAdministration.retryGeneration(generationId);
-        return Response.accepted().entity("Retry scheduled").build();
+        
+        log.info("Successfully scheduled retry for generation: {}", generationId);
+        
+        return Response.accepted()
+                .entity(Map.of(
+                    "message", "Retry scheduled",
+                    "generationId", generationId
+                ))
+                .build();
     }
 
     @GET
@@ -212,8 +223,19 @@ public class SbomResource {
     @APIResponse(responseCode = "409", description = "Conflict: Enhancement not FAILED or parent generation missing")
     public Response retryEnhancement(
             @PathParam("id") @NotBlank(message = "Enhancement ID cannot be blank") String enhancementId) {
+        
+        log.debug("Retry requested for enhancement: {}", enhancementId);
+        
         sbomAdministration.retryEnhancement(enhancementId);
-        return Response.accepted().entity("Retry scheduled").build();
+        
+        log.info("Successfully scheduled retry for enhancement: {}", enhancementId);
+        
+        return Response.accepted()
+                .entity(Map.of(
+                    "message", "Retry scheduled",
+                    "enhancementId", enhancementId
+                ))
+                .build();
     }
 
     @POST
@@ -236,7 +258,9 @@ public class SbomResource {
         // 3. Return a 202 Accepted response, as this is an async process.
         // We return the batch RequestId so the user can track it.
         String requestId = requestsCreatedEvent.getData().getRequestId();
-        return Response.accepted(Collections.singletonMap("id", requestId)).build();
+        log.info("Successfully triggered generation with request ID: {}", requestId);
+        
+        return Response.accepted(Map.of("id", requestId)).build();
     }
 
     /**
