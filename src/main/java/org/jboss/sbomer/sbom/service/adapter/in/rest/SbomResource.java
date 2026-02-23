@@ -26,6 +26,7 @@ import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
+import org.jboss.sbomer.sbom.service.core.domain.exception.EntityNotFoundException;
 import org.jboss.sbomer.sbom.service.core.domain.exception.ValidationException;
 import org.jboss.sbomer.sbom.service.core.port.api.SbomAdministration;
 import org.jboss.sbomer.sbom.service.core.port.api.generation.GenerationProcessor;
@@ -96,7 +97,7 @@ public class SbomResource {
     public Response getRequest(@PathParam("id") @NotBlank(message = "Request ID cannot be blank") String requestId) {
         RequestRecord record = sbomAdministration.getRequest(requestId);
         if (record == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new EntityNotFoundException("Request with ID " + requestId + " not found");
         }
         return Response.ok(record).build();
     }
@@ -147,7 +148,7 @@ public class SbomResource {
             @PathParam("id") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
         GenerationRecord record = sbomAdministration.getGeneration(generationId);
         if (record == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new EntityNotFoundException("Generation with ID " + generationId + " not found");
         }
         return Response.ok(record).build();
     }
@@ -187,7 +188,7 @@ public class SbomResource {
             @PathParam("id") @NotBlank(message = "Enhancement ID cannot be blank") String enhancementId) {
         EnhancementRecord record = sbomAdministration.getEnhancement(enhancementId);
         if (record == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new EntityNotFoundException("Enhancement with ID " + enhancementId + " not found");
         }
         return Response.ok(record).build();
     }
