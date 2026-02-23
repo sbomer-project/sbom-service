@@ -32,6 +32,9 @@ import org.jboss.sbomer.sbom.service.core.utility.TsidUtility;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -64,8 +67,9 @@ public class SbomResource {
     @GET
     @Path("/requests")
     @Operation(summary = "List Requests", description = "Paginated list of high-level SBOM generation requests.")
-    public Response fetchRequests(@QueryParam("pageIndex") @DefaultValue("0") int page,
-             @QueryParam("pageSize") @DefaultValue("10") int size) {
+    public Response fetchRequests(
+            @QueryParam("pageIndex") @DefaultValue("0") @Min(value = 0, message = "Page index must be non-negative") int page,
+            @QueryParam("pageSize") @DefaultValue("10") @Min(value = 1, message = "Page size must be at least 1") @Max(value = 100, message = "Page size cannot exceed 100") int size) {
         Page<RequestRecord> result = sbomAdministration.fetchRequests(page, size);
         return Response.ok(result).build();
     }
@@ -75,7 +79,7 @@ public class SbomResource {
     @Operation(summary = "Get Request Details", description = "Fetch a specific SBOM generation request by ID.")
     @APIResponse(responseCode = "200", description = "Found")
     @APIResponse(responseCode = "404", description = "Request not found")
-    public Response getRequest(@PathParam("id") String requestId) {
+    public Response getRequest(@PathParam("id") @NotBlank(message = "Request ID cannot be blank") String requestId) {
         RequestRecord record = sbomAdministration.getRequest(requestId);
         if (record == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -86,9 +90,10 @@ public class SbomResource {
     @GET
     @Path("/requests/{requestId}/generations")
     @Operation(summary = "List Generations for Request", description = "Paginated list of generations belonging to a specific request ID.")
-    public Response fetchGenerations(@PathParam("requestId") String requestId,
-            @QueryParam("pageIndex") @DefaultValue("0") int page,
-            @QueryParam("pageSize") @DefaultValue("10") int size) {
+    public Response fetchGenerations(
+            @PathParam("requestId") @NotBlank(message = "Request ID cannot be blank") String requestId,
+            @QueryParam("pageIndex") @DefaultValue("0") @Min(value = 0, message = "Page index must be non-negative") int page,
+            @QueryParam("pageSize") @DefaultValue("10") @Min(value = 1, message = "Page size must be at least 1") @Max(value = 100, message = "Page size cannot exceed 100") int size) {
         Page<GenerationRecord> result = sbomAdministration.fetchGenerationsForRequest(requestId, page, size);
         return Response.ok(result).build();
     }
@@ -96,7 +101,8 @@ public class SbomResource {
     @GET
     @Path("/requests/{requestId}/generations/all")
     @Operation(summary = "Fetch All Generations", description = "Get a full list of generations for a request (non-paginated).")
-    public Response getAllGenerationsForRequest(@PathParam("requestId") String requestId) {
+    public Response getAllGenerationsForRequest(
+            @PathParam("requestId") @NotBlank(message = "Request ID cannot be blank") String requestId) {
         List<GenerationRecord> records = sbomAdministration.getGenerationsForRequest(requestId);
 
         if (records == null || records.isEmpty()) {
@@ -111,8 +117,9 @@ public class SbomResource {
     @GET
     @Path("/generations")
     @Operation(summary = "List Generations", description = "Paginated list of generations.")
-    public Response fetchGenerations(@QueryParam("pageIndex") @DefaultValue("0") int page,
-            @QueryParam("pageSize") @DefaultValue("10") int size) {
+    public Response fetchGenerations(
+            @QueryParam("pageIndex") @DefaultValue("0") @Min(value = 0, message = "Page index must be non-negative") int page,
+            @QueryParam("pageSize") @DefaultValue("10") @Min(value = 1, message = "Page size must be at least 1") @Max(value = 100, message = "Page size cannot exceed 100") int size) {
         Page<GenerationRecord> result = sbomAdministration.fetchGenerations(page, size);
         return Response.ok(result).build();
     }
@@ -122,7 +129,8 @@ public class SbomResource {
     @Operation(summary = "Get Generation Details", description = "Fetch a specific generation record by ID.")
     @APIResponse(responseCode = "200", description = "Found")
     @APIResponse(responseCode = "404", description = "Generation not found")
-    public Response getGeneration(@PathParam("id") String generationId) {
+    public Response getGeneration(
+            @PathParam("id") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
         GenerationRecord record = sbomAdministration.getGeneration(generationId);
         if (record == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -139,7 +147,8 @@ public class SbomResource {
     @APIResponse(responseCode = "404", description = "Generation ID not found")
     @APIResponse(responseCode = "409", description = "Conflict: Generation is not in FAILED state")
     @APIResponse(responseCode = "500", description = "Internal server error")
-    public Response retryGeneration(@PathParam("id") String generationId) {
+    public Response retryGeneration(
+            @PathParam("id") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
         sbomAdministration.retryGeneration(generationId);
         return Response.accepted().entity("Retry scheduled").build();
     }
@@ -149,7 +158,8 @@ public class SbomResource {
     @Operation(summary = "Get Enhancement Details", description = "Fetch a specific enhancement record by ID.")
     @APIResponse(responseCode = "200", description = "Found")
     @APIResponse(responseCode = "404", description = "Enhancement not found")
-    public Response getEnhancement(@PathParam("id") String enhancementId) {
+    public Response getEnhancement(
+            @PathParam("id") @NotBlank(message = "Enhancement ID cannot be blank") String enhancementId) {
         EnhancementRecord record = sbomAdministration.getEnhancement(enhancementId);
         if (record == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -163,7 +173,8 @@ public class SbomResource {
     @APIResponse(responseCode = "200", description = "Found")
     @APIResponse(responseCode = "404", description = "Generation ID not found")
     @APIResponse(responseCode = "500", description = "Internal server error")
-    public Response getEnhancementsForGeneration(@PathParam("generationId") String generationId) {
+    public Response getEnhancementsForGeneration(
+            @PathParam("generationId") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
         List<EnhancementRecord> records = sbomAdministration.getEnhancementsForGeneration(generationId);
         return Response.ok(records).build();
     }
@@ -171,8 +182,9 @@ public class SbomResource {
     @GET
     @Path("/enhancements")
     @Operation(summary = "List Enhancements", description = "Paginated list of enhancements.")
-    public Response fetchEnhancements(@QueryParam("pageIndex") @DefaultValue("0") int page,
-            @QueryParam("pageSize") @DefaultValue("10") int size) {
+    public Response fetchEnhancements(
+            @QueryParam("pageIndex") @DefaultValue("0") @Min(value = 0, message = "Page index must be non-negative") int page,
+            @QueryParam("pageSize") @DefaultValue("10") @Min(value = 1, message = "Page size must be at least 1") @Max(value = 100, message = "Page size cannot exceed 100") int size) {
         Page<EnhancementRecord> result = sbomAdministration.fetchEnhancements(page, size);
         return Response.ok(result).build();
     }
@@ -184,7 +196,8 @@ public class SbomResource {
     @APIResponse(responseCode = "202", description = "Retry scheduled successfully")
     @APIResponse(responseCode = "404", description = "Enhancement ID not found")
     @APIResponse(responseCode = "409", description = "Conflict: Enhancement not FAILED or parent generation missing")
-    public Response retryEnhancement(@PathParam("id") String enhancementId) {
+    public Response retryEnhancement(
+            @PathParam("id") @NotBlank(message = "Enhancement ID cannot be blank") String enhancementId) {
         sbomAdministration.retryEnhancement(enhancementId);
         return Response.accepted().entity("Retry scheduled").build();
     }
