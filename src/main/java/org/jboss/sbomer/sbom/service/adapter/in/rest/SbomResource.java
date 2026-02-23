@@ -19,9 +19,12 @@ import org.jboss.sbomer.events.common.PublisherSpec;
 import org.jboss.sbomer.events.common.Target;
 import org.jboss.sbomer.events.request.RequestData;
 import org.jboss.sbomer.events.request.RequestsCreated;
+import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.ErrorResponse;
 import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.GenerationRequestDTO;
 import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.GenerationRequestsDTO;
 import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.PublisherDTO;
+import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.RetryResponse;
+import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.TriggerResponse;
 import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
@@ -92,8 +95,9 @@ public class SbomResource {
     @GET
     @Path("/requests/{id}")
     @Operation(summary = "Get Request Details", description = "Fetch a specific SBOM generation request by ID.")
-    @APIResponse(responseCode = "200", description = "Found")
-    @APIResponse(responseCode = "404", description = "Request not found")
+    @APIResponse(responseCode = "200", description = "Found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = RequestRecord.class)))
+    @APIResponse(responseCode = "400", description = "Invalid request ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "404", description = "Request not found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response getRequest(@PathParam("id") @NotBlank(message = "Request ID cannot be blank") String requestId) {
         RequestRecord record = sbomAdministration.getRequest(requestId);
         if (record == null) {
@@ -142,8 +146,9 @@ public class SbomResource {
     @GET
     @Path("/generations/{id}")
     @Operation(summary = "Get Generation Details", description = "Fetch a specific generation record by ID.")
-    @APIResponse(responseCode = "200", description = "Found")
-    @APIResponse(responseCode = "404", description = "Generation not found")
+    @APIResponse(responseCode = "200", description = "Found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = GenerationRecord.class)))
+    @APIResponse(responseCode = "400", description = "Invalid generation ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "404", description = "Generation not found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response getGeneration(
             @PathParam("id") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
         GenerationRecord record = sbomAdministration.getGeneration(generationId);
@@ -158,10 +163,11 @@ public class SbomResource {
     @POST
     @Path("/generations/{id}/retry")
     @Operation(summary = "Retry Generation", description = "Resets a FAILED generation to NEW and re-schedules the event.")
-    @APIResponse(responseCode = "202", description = "Retry scheduled successfully")
-    @APIResponse(responseCode = "404", description = "Generation ID not found")
-    @APIResponse(responseCode = "409", description = "Conflict: Generation is not in FAILED state")
-    @APIResponse(responseCode = "500", description = "Internal server error")
+    @APIResponse(responseCode = "202", description = "Retry scheduled successfully", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = RetryResponse.class)))
+    @APIResponse(responseCode = "400", description = "Invalid generation ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "404", description = "Generation ID not found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "409", description = "Conflict: Generation is not in FAILED state", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response retryGeneration(
             @PathParam("id") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
         
@@ -172,18 +178,16 @@ public class SbomResource {
         log.info("Successfully scheduled retry for generation: {}", generationId);
         
         return Response.accepted()
-                .entity(Map.of(
-                    "message", "Retry scheduled",
-                    "generationId", generationId
-                ))
+                .entity(new RetryResponse("Retry scheduled", generationId))
                 .build();
     }
 
     @GET
     @Path("/enhancements/{id}")
     @Operation(summary = "Get Enhancement Details", description = "Fetch a specific enhancement record by ID.")
-    @APIResponse(responseCode = "200", description = "Found")
-    @APIResponse(responseCode = "404", description = "Enhancement not found")
+    @APIResponse(responseCode = "200", description = "Found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = EnhancementRecord.class)))
+    @APIResponse(responseCode = "400", description = "Invalid enhancement ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "404", description = "Enhancement not found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response getEnhancement(
             @PathParam("id") @NotBlank(message = "Enhancement ID cannot be blank") String enhancementId) {
         EnhancementRecord record = sbomAdministration.getEnhancement(enhancementId);
@@ -196,9 +200,9 @@ public class SbomResource {
     @GET
     @Path("/enhancements/generation/{generationId}")
     @Operation(summary = "List Enhancements for Generation", description = "Get all enhancements for a specific generation ID.")
-    @APIResponse(responseCode = "200", description = "Found")
-    @APIResponse(responseCode = "404", description = "Generation ID not found")
-    @APIResponse(responseCode = "500", description = "Internal server error")
+    @APIResponse(responseCode = "200", description = "Found", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "400", description = "Invalid generation ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response getEnhancementsForGeneration(
             @PathParam("generationId") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
         List<EnhancementRecord> records = sbomAdministration.getEnhancementsForGeneration(generationId);
@@ -219,9 +223,11 @@ public class SbomResource {
     @POST
     @Path("/enhancements/{id}/retry")
     @Operation(summary = "Retry Enhancement", description = "Resets a FAILED enhancement to NEW and re-schedules it using previous inputs.")
-    @APIResponse(responseCode = "202", description = "Retry scheduled successfully")
-    @APIResponse(responseCode = "404", description = "Enhancement ID not found")
-    @APIResponse(responseCode = "409", description = "Conflict: Enhancement not FAILED or parent generation missing")
+    @APIResponse(responseCode = "202", description = "Retry scheduled successfully", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = RetryResponse.class)))
+    @APIResponse(responseCode = "400", description = "Invalid enhancement ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "404", description = "Enhancement ID not found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "409", description = "Conflict: Enhancement not FAILED or parent generation missing", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response retryEnhancement(
             @PathParam("id") @NotBlank(message = "Enhancement ID cannot be blank") String enhancementId) {
         
@@ -232,10 +238,7 @@ public class SbomResource {
         log.info("Successfully scheduled retry for enhancement: {}", enhancementId);
         
         return Response.accepted()
-                .entity(Map.of(
-                    "message", "Retry scheduled",
-                    "enhancementId", enhancementId
-                ))
+                .entity(new RetryResponse("Retry scheduled", enhancementId))
                 .build();
     }
 
@@ -244,8 +247,9 @@ public class SbomResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Trigger SBOM Generation", description = "Accepts a manifest of generation requests and publishers, converts them to internal events, and schedules them.")
-    @APIResponse(responseCode = "202", description = "Request accepted. Returns the batch Request ID.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(example = "{\"id\": \"req-12345\"}")))
-    @APIResponse(responseCode = "400", description = "Invalid payload or validation error")
+    @APIResponse(responseCode = "202", description = "Request accepted. Returns the batch Request ID.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = TriggerResponse.class)))
+    @APIResponse(responseCode = "400", description = "Invalid payload or validation error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response triggerGeneration(@Valid GenerationRequestsDTO request) {
 
         log.info("Received REST request to trigger {} generation requests", request.generationRequests().size());
@@ -261,7 +265,7 @@ public class SbomResource {
         String requestId = requestsCreatedEvent.getData().getRequestId();
         log.info("Successfully triggered generation with request ID: {}", requestId);
         
-        return Response.accepted(Map.of("id", requestId)).build();
+        return Response.accepted(new TriggerResponse(requestId)).build();
     }
 
     /**
