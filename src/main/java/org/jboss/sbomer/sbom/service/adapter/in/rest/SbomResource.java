@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,10 +26,12 @@ import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
+import org.jboss.sbomer.sbom.service.core.domain.exception.ValidationException;
 import org.jboss.sbomer.sbom.service.core.port.api.SbomAdministration;
 import org.jboss.sbomer.sbom.service.core.port.api.generation.GenerationProcessor;
 import org.jboss.sbomer.sbom.service.core.utility.TsidUtility;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -63,6 +66,17 @@ public class SbomResource {
 
     @Inject
     GenerationProcessor generationProcessor;
+
+    /**
+     * Validates that all required dependencies are properly injected.
+     * This method is called after dependency injection is complete but before the bean is put into service.
+     */
+    @PostConstruct
+    void init() {
+        Objects.requireNonNull(sbomAdministration, "SbomAdministration must be injected");
+        Objects.requireNonNull(generationProcessor, "GenerationProcessor must be injected");
+        log.debug("SbomResource initialized successfully with all dependencies");
+    }
 
     @GET
     @Path("/requests")
@@ -230,6 +244,17 @@ public class SbomResource {
      * object.
      */
     private RequestsCreated toRequestsCreatedEvent(GenerationRequestsDTO request) {
+        // Validate input parameters
+        if (request == null) {
+            throw new ValidationException("Generation request cannot be null");
+        }
+        if (request.generationRequests() == null) {
+            throw new ValidationException("Generation requests list cannot be null");
+        }
+        if (request.generationRequests().isEmpty()) {
+            throw new ValidationException("At least one generation request is required");
+        }
+
         String newRequestId = TsidUtility.createUniqueGenerationRequestId();
         // Create a new Context based on the correct Avro schema.
         ContextSpec context = ContextSpec.newBuilder()
@@ -268,6 +293,17 @@ public class SbomResource {
     }
 
     private PublisherSpec toPublisherSpec(PublisherDTO dto) {
+        // Validate DTO and its required fields
+        if (dto == null) {
+            throw new ValidationException("Publisher DTO cannot be null");
+        }
+        if (dto.name() == null) {
+            throw new ValidationException("Publisher name cannot be null");
+        }
+        if (dto.version() == null) {
+            throw new ValidationException("Publisher version cannot be null");
+        }
+        
         return PublisherSpec.newBuilder()
                 .setName(dto.name())
                 .setVersion(dto.version())
@@ -276,6 +312,20 @@ public class SbomResource {
     }
 
     private GenerationRequestSpec toGenerationRequestSpec(GenerationRequestDTO dto) {
+        // Validate DTO and nested objects
+        if (dto == null) {
+            throw new ValidationException("Generation request DTO cannot be null");
+        }
+        if (dto.target() == null) {
+            throw new ValidationException("Target cannot be null");
+        }
+        if (dto.target().type() == null) {
+            throw new ValidationException("Target type cannot be null");
+        }
+        if (dto.target().identifier() == null) {
+            throw new ValidationException("Target identifier cannot be null");
+        }
+        
         Target target = Target.newBuilder()
                 .setType(dto.target().type())
                 .setIdentifier(dto.target().identifier())
