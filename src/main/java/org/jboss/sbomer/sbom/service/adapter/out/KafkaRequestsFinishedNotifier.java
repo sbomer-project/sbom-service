@@ -20,6 +20,6 @@ public class KafkaRequestsFinishedNotifier implements RequestsFinishedNotifier {
     @Override
     public void notify(RequestsFinished requestsFinishedEvent) {
         emitter.send(requestsFinishedEvent);
-        log.error("requests.finished sent successfully to Kafka topic 'requests.finished' for request ID: " + requestsFinishedEvent.getData().getRequestId());
+        log.info("requests.finished sent successfully to Kafka topic 'requests.finished' for request ID: {}", requestsFinishedEvent.getData().getRequestId());
     }
 }
