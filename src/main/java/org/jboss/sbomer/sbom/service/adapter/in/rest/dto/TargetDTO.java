@@ -13,11 +13,11 @@ import jakarta.validation.constraints.NotBlank;
 public record TargetDTO(
         @NotBlank(message = "Target type must be provided")
         @JsonProperty("type")
-        @Schema(description = "The type of the target artifact.", example = "CONTAINER_IMAGE", required = true)
+        @Schema(description = "The type of the target artifact.", examples = {"CONTAINER_IMAGE", "RPM"}, required = true)
         String type,
 
         @NotBlank(message = "Target identifier must be provided")
         @JsonProperty("identifier")
-        @Schema(description = "The specific identifier/coordinates for the target.", example = "quay.io/pct-security/mequal:latest", required = true)
+        @Schema(description = "The specific identifier/coordinates for the target.", examples = {"quay.io/pct-security/mequal:latest"}, required = true)
         String identifier
 ) {}

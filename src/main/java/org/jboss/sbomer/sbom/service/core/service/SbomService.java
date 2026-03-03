@@ -119,8 +119,6 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                 failedGenerationRecord.setFinished(Instant.now());
                 statusRepository.updateGeneration(failedGenerationRecord);
 
-
-                // update request status to FAILED
                 break;
         }
     }

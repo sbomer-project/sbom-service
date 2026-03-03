@@ -5,6 +5,7 @@ import static jakarta.ws.rs.core.Response.Status.CONFLICT;
 import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 
@@ -32,7 +33,10 @@ class ExceptionMapperTest {
                 .when().post("/api/v1/generations/gen-1/retry")
                 .then()
                 .statusCode(NOT_FOUND.getStatusCode())
-                .body(equalTo(message));
+                .body("error", equalTo("Not Found"))
+                .body("message", equalTo(message))
+                .body("status", equalTo(404))
+                .body("timestamp", notNullValue());
     }
 
     @Test
@@ -45,7 +49,10 @@ class ExceptionMapperTest {
                 .when().post("/api/v1/generations/gen-1/retry")
                 .then()
                 .statusCode(CONFLICT.getStatusCode())
-                .body(equalTo(message));
+                .body("error", equalTo("Conflict"))
+                .body("message", equalTo(message))
+                .body("status", equalTo(409))
+                .body("timestamp", notNullValue());
     }
 
     @Test
@@ -58,6 +65,9 @@ class ExceptionMapperTest {
                 .when().post("/api/v1/generations/gen-1/retry")
                 .then()
                 .statusCode(INTERNAL_SERVER_ERROR.getStatusCode())
-                .body(equalTo(message));
+                .body("error", equalTo("Internal Server Error"))
+                .body("message", equalTo(message))
+                .body("status", equalTo(500))
+                .body("timestamp", notNullValue());
     }
 }
