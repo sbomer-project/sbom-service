@@ -2,7 +2,7 @@ package org.jboss.sbomer.sbom.service.core.domain.enums;
 
 // we may not use all these in the end, it might depend on the generators
 public enum GenerationStatus {
-    NEW, SCHEDULED, INITIALIZING, INITIALIZED, GENERATING, FINISHED, FAILED;
+    NEW, SCHEDULED, GENERATING, FINISHED, FAILED;
 
     public static GenerationStatus fromName(String phase) {
         return GenerationStatus.valueOf(phase.toUpperCase());
