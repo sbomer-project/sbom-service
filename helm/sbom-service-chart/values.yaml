@@ -24,6 +24,11 @@ config:
   database:
     # We need the name of the database secret to read from
     existingSecret: ""
+  # If known, override these values in the very top helm chart, pass the helm chart name/url and version
+  system:
+    release: undefined
+    version: undefined
+
 
 # Configuration for the SBOM Service
 recipeConfig:
