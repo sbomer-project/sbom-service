@@ -169,4 +169,26 @@ public class SbomAdminService implements SbomAdministration {
                         "Could not find previous enhancement with index " + (targetIndex - 1)));
     }
 
+    // --- RUN QUERY OPERATIONS ---
+
+    @Override
+    public List<GenerationRunRecord> getRunsForGeneration(String generationId) {
+        return statusRepository.findGenerationRunsByGenerationId(generationId);
+    }
+
+    @Override
+    public GenerationRunRecord getGenerationRun(String runId) {
+        return statusRepository.findGenerationRunById(runId);
+    }
+
+    @Override
+    public List<EnhancementRunRecord> getRunsForEnhancement(String enhancementId) {
+        return statusRepository.findEnhancementRunsByEnhancementId(enhancementId);
+    }
+
+    @Override
+    public EnhancementRunRecord getEnhancementRun(String runId) {
+        return statusRepository.findEnhancementRunById(runId);
+    }
+
 }

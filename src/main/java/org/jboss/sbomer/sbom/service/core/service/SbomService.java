@@ -77,6 +77,20 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             // Create a generation record for tracking and save to data source
             GenerationRecord generationRecord = sbomMapper.toNewGenerationRecord(generationRequestSpec, requestsCreatedEvent.getData().getRequestId());
             statusRepository.saveGeneration(generationRecord);
+            
+            // Create the initial Run entity (Attempt #1) for this generation
+            GenerationRunRecord initialRun = new GenerationRunRecord();
+            initialRun.setId(TsidUtility.createUniqueRunId());
+            initialRun.setGenerationId(generationRecord.getId());
+            initialRun.setAttemptNumber(1);
+            initialRun.setState(RunState.PENDING);
+            initialRun.setMessage("Initial generation attempt");
+            initialRun.setStartTime(Instant.now());
+            statusRepository.saveGenerationRun(initialRun);
+            
+            log.info("Created initial GenerationRun: runId={}, generationId={}, attempt=1",
+                    initialRun.getId(), generationRecord.getId());
+            
             // Schedule the new generation (i.e. send generation.created event to the system)
             GenerationCreated generationCreatedEvent = sbomMapper.toGenerationCreatedEvent(generationRecord, generationRequestSpec, requestsCreatedEvent.getData().getRequestId());
             generationScheduler.schedule(generationCreatedEvent);
@@ -233,6 +247,19 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
 
             // We find an enhancement with status NEW
             if (EnhancementStatus.NEW.equals(current.getStatus())) {
+                // Create the initial Run entity (Attempt #1) for this enhancement
+                EnhancementRunRecord initialRun = new EnhancementRunRecord();
+                initialRun.setId(TsidUtility.createUniqueRunId());
+                initialRun.setEnhancementId(current.getId());
+                initialRun.setAttemptNumber(1);
+                initialRun.setState(RunState.PENDING);
+                initialRun.setMessage("Initial enhancement attempt");
+                initialRun.setStartTime(Instant.now());
+                statusRepository.saveEnhancementRun(initialRun);
+                
+                log.info("Created initial EnhancementRun: runId={}, enhancementId={}, attempt=1",
+                        initialRun.getId(), current.getId());
+                
                 // lastFinished might be null if the very first record is NEW (expected)
                 enhancementScheduler.schedule(sbomMapper.toEnhancementCreatedEvent(current, lastFinished, generationRecord));
                 return;

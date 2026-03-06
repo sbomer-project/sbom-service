@@ -27,7 +27,9 @@ import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.RetryResponse;
 import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.TriggerResponse;
 import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
+import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
+import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.exception.EntityNotFoundException;
 import org.jboss.sbomer.sbom.service.core.domain.exception.ValidationException;
@@ -248,6 +250,76 @@ public class SbomResource {
         return Response.accepted()
                 .entity(new RetryResponse("Retry scheduled", enhancementId))
                 .build();
+    }
+
+    // --- RUN ENDPOINTS ---
+
+    @GET
+    @Path("/generations/{generationId}/runs")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "List Runs for Generation", description = "Get all execution attempts (runs) for a specific generation, showing retry history.")
+    @APIResponse(responseCode = "200", description = "Success - returns all runs (may be empty list)", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = GenerationRunRecord[].class)))
+    @APIResponse(responseCode = "400", description = "Invalid generation ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    public Response getRunsForGeneration(
+            @PathParam("generationId") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
+        List<GenerationRunRecord> runs = sbomAdministration.getRunsForGeneration(generationId);
+        return Response.ok(runs).build();
+    }
+
+    @GET
+    @Path("/generations/{generationId}/runs/{runId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get Specific Generation Run", description = "Fetch details of a specific generation run by its ID.")
+    @APIResponse(responseCode = "200", description = "Found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = GenerationRunRecord.class)))
+    @APIResponse(responseCode = "400", description = "Invalid generation ID or run ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "404", description = "Run not found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    public Response getGenerationRun(
+            @PathParam("generationId") @NotBlank(message = "Generation ID cannot be blank") String generationId,
+            @PathParam("runId") @NotBlank(message = "Run ID cannot be blank") String runId) {
+        GenerationRunRecord run = sbomAdministration.getGenerationRun(runId);
+        if (run == null) {
+            throw new EntityNotFoundException("Generation run with ID " + runId + " not found");
+        }
+        // Verify the run belongs to the specified generation
+        if (!run.getGenerationId().equals(generationId)) {
+            throw new EntityNotFoundException("Run " + runId + " does not belong to generation " + generationId);
+        }
+        return Response.ok(run).build();
+    }
+
+    @GET
+    @Path("/enhancements/{enhancementId}/runs")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "List Runs for Enhancement", description = "Get all execution attempts (runs) for a specific enhancement, showing retry history.")
+    @APIResponse(responseCode = "200", description = "Success - returns all runs (may be empty list)", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = EnhancementRunRecord[].class)))
+    @APIResponse(responseCode = "400", description = "Invalid enhancement ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    public Response getRunsForEnhancement(
+            @PathParam("enhancementId") @NotBlank(message = "Enhancement ID cannot be blank") String enhancementId) {
+        List<EnhancementRunRecord> runs = sbomAdministration.getRunsForEnhancement(enhancementId);
+        return Response.ok(runs).build();
+    }
+
+    @GET
+    @Path("/enhancements/{enhancementId}/runs/{runId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get Specific Enhancement Run", description = "Fetch details of a specific enhancement run by its ID.")
+    @APIResponse(responseCode = "200", description = "Found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = EnhancementRunRecord.class)))
+    @APIResponse(responseCode = "400", description = "Invalid enhancement ID or run ID", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(responseCode = "404", description = "Run not found", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
+    public Response getEnhancementRun(
+            @PathParam("enhancementId") @NotBlank(message = "Enhancement ID cannot be blank") String enhancementId,
+            @PathParam("runId") @NotBlank(message = "Run ID cannot be blank") String runId) {
+        EnhancementRunRecord run = sbomAdministration.getEnhancementRun(runId);
+        if (run == null) {
+            throw new EntityNotFoundException("Enhancement run with ID " + runId + " not found");
+        }
+        // Verify the run belongs to the specified enhancement
+        if (!run.getEnhancementId().equals(enhancementId)) {
+            throw new EntityNotFoundException("Run " + runId + " does not belong to enhancement " + enhancementId);
+        }
+        return Response.ok(run).build();
     }
 
     @POST
