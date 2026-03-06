@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
+import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
+import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
@@ -119,4 +121,56 @@ public interface StatusRepository {
      * enhancers, it should give the urls of the last enhancement step
      */
     List<String> getFinalSbomUrlsForCompletedGeneration(String generationId);
+
+    // ========================================================================
+    // GenerationRun Operations
+    // ========================================================================
+
+    /**
+     * Saves a GenerationRunRecord.
+     */
+    void saveGenerationRun(GenerationRunRecord run);
+
+    /**
+     * Finds a GenerationRunRecord by its unique ID.
+     */
+    GenerationRunRecord findGenerationRunById(String runId);
+
+    /**
+     * Updates a GenerationRunRecord in the database.
+     */
+    void updateGenerationRun(GenerationRunRecord run);
+
+    /**
+     * Finds all GenerationRunRecords for a specific generation.
+     * @param generationId The generation ID
+     * @return List of runs ordered by attempt number
+     */
+    List<GenerationRunRecord> findGenerationRunsByGenerationId(String generationId);
+
+    // ========================================================================
+    // EnhancementRun Operations
+    // ========================================================================
+
+    /**
+     * Saves an EnhancementRunRecord.
+     */
+    void saveEnhancementRun(EnhancementRunRecord run);
+
+    /**
+     * Finds an EnhancementRunRecord by its unique ID.
+     */
+    EnhancementRunRecord findEnhancementRunById(String runId);
+
+    /**
+     * Updates an EnhancementRunRecord in the database.
+     */
+    void updateEnhancementRun(EnhancementRunRecord run);
+
+    /**
+     * Finds all EnhancementRunRecords for a specific enhancement.
+     * @param enhancementId The enhancement ID
+     * @return List of runs ordered by attempt number
+     */
+    List<EnhancementRunRecord> findEnhancementRunsByEnhancementId(String enhancementId);
 }
