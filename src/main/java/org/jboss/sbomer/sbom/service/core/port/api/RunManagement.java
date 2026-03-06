@@ -1,9 +1,9 @@
 package org.jboss.sbomer.sbom.service.core.port.api;
 
-import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
+import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
+import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 
 /**
  * Port for managing execution runs and their state transitions.
