@@ -291,11 +291,11 @@ public class PanacheStatusRepository implements StatusRepository {
     @Override
     public boolean isGenerationAndEnhancementsFinished(String generationId) {
         return generationRepository.find("generationId", generationId).firstResultOptional()
-            .filter(generationEntity -> generationEntity.getStatus() == GenerationStatus.FINISHED)
+            .filter(generationEntity -> generationEntity.getStatus() == GenerationStatus.COMPLETED)
             .map(generationEntity -> {
                 List<EnhancementEntity> children = enhancementRepository.list("generation.generationId", generationId);
                 return children.isEmpty()
-                    || children.stream().allMatch(e -> e.getStatus() == EnhancementStatus.FINISHED);
+                    || children.stream().allMatch(e -> e.getStatus() == EnhancementStatus.COMPLETED);
             })
             .orElse(false);
     }
@@ -313,7 +313,7 @@ public class PanacheStatusRepository implements StatusRepository {
             .map(generationEntity -> {
                 List<EnhancementEntity> children = enhancementRepository.list("generation.generationId", generationId);
                 return !children.isEmpty() ? children.stream()
-                    .filter(e -> e.getStatus() == EnhancementStatus.FINISHED)
+                    .filter(e -> e.getStatus() == EnhancementStatus.COMPLETED)
                     .max(Comparator.comparingInt(EnhancementEntity::getIndex))
                     .map(EnhancementEntity::getEnhancedSbomUrls)
                     .orElse(generationEntity.getGenerationSbomUrls())

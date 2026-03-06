@@ -35,7 +35,7 @@ public class PanacheStatusRepositoryTest {
     void testSaveAndRetrieveRequest() {
         RequestRecord requestRecord = new RequestRecord();
         requestRecord.setId(UUID.randomUUID().toString()); // Set ID explicitly
-        requestRecord.setStatus(RequestStatus.RECEIVED);
+        requestRecord.setStatus(RequestStatus.PENDING);
         Instant now = Instant.now();
         requestRecord.setCreationDate(now);
 
@@ -44,7 +44,7 @@ public class PanacheStatusRepositoryTest {
         RequestRecord retrieved = statusRepository.findRequestById(requestRecord.getId());
         assertThat(retrieved).isNotNull();
         assertThat(retrieved.getId()).isEqualTo(requestRecord.getId());
-        assertThat(retrieved.getStatus()).isEqualTo(RequestStatus.RECEIVED);
+        assertThat(retrieved.getStatus()).isEqualTo(RequestStatus.PENDING);
         assertThat(retrieved.getCreationDate()).isNotNull();
     }
 
@@ -77,7 +77,7 @@ public class PanacheStatusRepositoryTest {
         statusRepository.saveGeneration(generationRecord);
 
         generationRecord.setGeneratorName("generatorName2");
-        generationRecord.setStatus(GenerationStatus.FINISHED);
+        generationRecord.setStatus(GenerationStatus.COMPLETED);
         generationRecord.setGenerationSbomUrls(List.of("https://url1", "https://url2"));
 
         statusRepository.updateGeneration(generationRecord);
@@ -85,7 +85,7 @@ public class PanacheStatusRepositoryTest {
         GenerationRecord updated = statusRepository.findGenerationById(generationRecord.getId());
         assertThat(updated).isNotNull();
         assertThat(updated.getGeneratorName()).isEqualTo("generatorName2");
-        assertThat(updated.getStatus()).isEqualTo(GenerationStatus.FINISHED);
+        assertThat(updated.getStatus()).isEqualTo(GenerationStatus.COMPLETED);
         assertThat(updated.getGenerationSbomUrls()).containsExactly("https://url1", "https://url2");
     }
 
@@ -101,7 +101,7 @@ public class PanacheStatusRepositoryTest {
         statusRepository.saveEnhancement(enhancementRecord);
 
         enhancementRecord.setEnhancerName("enhancerName2");
-        enhancementRecord.setStatus(EnhancementStatus.FINISHED);
+        enhancementRecord.setStatus(EnhancementStatus.COMPLETED);
         enhancementRecord.setEnhancedSbomUrls(List.of("https://url1", "https://url2"));
 
         statusRepository.updateEnhancement(enhancementRecord);
@@ -109,7 +109,7 @@ public class PanacheStatusRepositoryTest {
         EnhancementRecord updated = statusRepository.findEnhancementById(enhancementRecord.getId());
         assertThat(updated).isNotNull();
         assertThat(updated.getEnhancerName()).isEqualTo("enhancerName2");
-        assertThat(updated.getStatus()).isEqualTo(EnhancementStatus.FINISHED);
+        assertThat(updated.getStatus()).isEqualTo(EnhancementStatus.COMPLETED);
         assertThat(updated.getEnhancedSbomUrls()).containsExactly("https://url1", "https://url2");
     }
 

@@ -97,9 +97,9 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                 break;
 
             case "FINISHED":
-                // update generation status to FINISHED
+                // update generation status to COMPLETED
                 GenerationRecord finishedGenerationRecord = statusRepository.findGenerationById(generationId);
-                finishedGenerationRecord.setStatus(GenerationStatus.FINISHED);
+                finishedGenerationRecord.setStatus(GenerationStatus.COMPLETED);
                 finishedGenerationRecord.setResult(generationUpdate.getData().getResultCode());
                 finishedGenerationRecord.setUpdated(Instant.now());
                 finishedGenerationRecord.setFinished(Instant.now());
@@ -144,9 +144,9 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                 break;
 
             case "FINISHED":
-                // update enhancement status to FINISHED
+                // update enhancement status to COMPLETED
                 EnhancementRecord finishedEnhancementRecord = statusRepository.findEnhancementById(enhancementId);
-                finishedEnhancementRecord.setStatus(EnhancementStatus.FINISHED);
+                finishedEnhancementRecord.setStatus(EnhancementStatus.COMPLETED);
                 finishedEnhancementRecord.setResult(enhancementUpdate.getData().getResultCode());
                 finishedEnhancementRecord.setUpdated(Instant.now());
                 finishedEnhancementRecord.setFinished(Instant.now());
@@ -176,7 +176,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             if (statusRepository.isAllGenerationRequestsFinished(requestId)) {
                 // ALL Generations and Enhancements finished
                 RequestRecord requestRecord = statusRepository.findRequestById(requestId);
-                requestRecord.setStatus(RequestStatus.FINISHED);
+                requestRecord.setStatus(RequestStatus.COMPLETED);
 
                 // Update request status to FINISHED
                 statusRepository.updateRequestRecord(requestRecord);
@@ -206,7 +206,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
 
         for (EnhancementRecord current : sortedEnhancementRecords) {
             // We find the last finished enhancement
-            if (EnhancementStatus.FINISHED.equals(current.getStatus())) {
+            if (EnhancementStatus.COMPLETED.equals(current.getStatus())) {
                 lastFinished = current;
                 continue;
             }

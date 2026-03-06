@@ -1,8 +1,20 @@
 package org.jboss.sbomer.sbom.service.core.domain.enums;
 
-// we may not use all these in the end, it might depend on the generators
 public enum GenerationStatus {
-    NEW, SCHEDULED, GENERATING, FINISHED, FAILED;
+    /** Generation created but not yet scheduled */
+    NEW,
+    
+    /** Generation scheduled in Tekton */
+    SCHEDULED,
+    
+    /** Generation is actively running */
+    GENERATING,
+    
+    /** Generation completed successfully */
+    COMPLETED,
+    
+    /** Generation failed (after all retry attempts) */
+    FAILED;
 
     public static GenerationStatus fromName(String phase) {
         return GenerationStatus.valueOf(phase.toUpperCase());
@@ -21,6 +33,6 @@ public enum GenerationStatus {
     }
 
     public boolean isFinal() {
-        return this.equals(FAILED) || this.equals(FINISHED);
+        return this == COMPLETED || this == FAILED;
     }
 }
