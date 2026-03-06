@@ -3,6 +3,7 @@ package org.jboss.sbomer.sbom.service.core.domain.dto;
 import java.time.Instant;
 import java.util.Collection;
 
+import org.jboss.sbomer.sbom.service.core.domain.enums.ChildGenerationsStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 
 import lombok.EqualsAndHashCode;
@@ -18,5 +19,6 @@ public class RequestRecord {
     private Collection<GenerationRecord> generationRecords;
     private Collection<PublisherRecord> publisherRecords;
     private RequestStatus status;
+    private ChildGenerationsStatus childGenerationsStatus;
     private Instant creationDate;
 }
