@@ -3,16 +3,13 @@ package org.jboss.sbomer.sbom.service.core.domain.enums;
 public enum GenerationStatus {
     /** Generation created but not yet scheduled */
     NEW,
-    
-    /** Generation scheduled in Tekton */
-    SCHEDULED,
-    
+
     /** Generation is actively running */
     GENERATING,
-    
+
     /** Generation completed successfully */
     COMPLETED,
-    
+
     /** Generation failed (after all retry attempts) */
     FAILED;
 

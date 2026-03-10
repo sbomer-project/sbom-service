@@ -12,6 +12,8 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.PublisherRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ChildEnhancementsStatus;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ChildGenerationsStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
@@ -41,6 +43,7 @@ public class SbomMapper {
         requestRecord.setId(requestsCreated.getData().getRequestId());
         requestRecord.setPublisherRecords(publisherRecords);
         requestRecord.setStatus(RequestStatus.PENDING);
+        requestRecord.setChildGenerationsStatus(ChildGenerationsStatus.PENDING);
         requestRecord.setCreationDate(requestsCreated.getContext().getTimestamp());
         return requestRecord;
     }
@@ -94,11 +97,12 @@ public class SbomMapper {
         generationRecord.setTargetType(requestSpec.getTarget().getType());
         generationRecord.setTargetIdentifier(requestSpec.getTarget().getIdentifier());
 
+
         // Create child Enhancement Records based on the Recipe
         List<EnhancementRecord> enhancementRecords = new ArrayList<>();
         List<EnhancerSpec> enhancerSpecs = recipe.getEnhancers();
 
-        if (enhancerSpecs != null) {
+        if (enhancerSpecs != null && !enhancerSpecs.isEmpty()) {
             for (int i = 0; i < enhancerSpecs.size(); i++) {
                 EnhancementRecord enhancementRecord = new EnhancementRecord();
                 enhancementRecord.setId(TsidUtility.createUniqueEnhancementId());
@@ -114,6 +118,10 @@ public class SbomMapper {
                 enhancementRecord.setGenerationId(generationRecord.getId());
                 enhancementRecords.add(enhancementRecord);
             }
+            generationRecord.setChildEnhancementsStatus(ChildEnhancementsStatus.PENDING);
+        } else {
+            // No enhancements for this generation
+            generationRecord.setChildEnhancementsStatus(ChildEnhancementsStatus.NOT_APPLICABLE);
         }
 
         generationRecord.setEnhancements(enhancementRecords);

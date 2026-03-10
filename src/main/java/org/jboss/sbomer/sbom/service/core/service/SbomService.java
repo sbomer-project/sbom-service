@@ -13,6 +13,7 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ChildGenerationsStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
@@ -96,6 +97,16 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             generationScheduler.schedule(generationCreatedEvent);
         }
 
+        // After all generations are created and scheduled, update the Request's childGenerationsStatus
+        // Since generations are now created with status NEW and runs are PENDING, the status should be PROCESSING
+        if (!generationRequestSpecs.isEmpty()) {
+            RequestRecord updatedRequest = statusRepository.findRequestById(requestsCreatedEvent.getData().getRequestId());
+            updatedRequest.setStatus(RequestStatus.PROCESSING);
+            updatedRequest.setChildGenerationsStatus(ChildGenerationsStatus.PROCESSING);
+            statusRepository.updateRequestRecord(updatedRequest);
+            log.info("Updated Request: id={}, status=PROCESSING, childGenerationsStatus=PROCESSING",
+                    updatedRequest.getId());
+        }
     }
 
     // Process the incoming updates from the generators
