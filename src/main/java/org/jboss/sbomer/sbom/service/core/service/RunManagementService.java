@@ -9,7 +9,6 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ChildEnhancementsStatus;
-import org.jboss.sbomer.sbom.service.core.domain.enums.ChildGenerationsStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
@@ -244,7 +243,7 @@ public class RunManagementService implements RunManagement {
 
     /**
      * Roll up Generation statuses to the parent Request.
-     * Recalculates childGenerationsStatus and overall RequestStatus.
+     * Recalculates overall RequestStatus based on child generation statuses.
      */
     @Override
     public void rollUpGenerationsToRequest(String requestId) {
@@ -262,16 +261,13 @@ public class RunManagementService implements RunManagement {
             return;
         }
 
-        // Calculate aggregate child status
-        ChildGenerationsStatus childStatus = calculateChildGenerationsStatus(generations);
-        RequestStatus newRequestStatus = mapChildGenerationsStatusToRequestStatus(childStatus);
+        // Calculate RequestStatus directly from child generation statuses
+        RequestStatus newRequestStatus = calculateRequestStatusFromGenerations(generations);
 
-        request.setChildGenerationsStatus(childStatus);
         request.setStatus(newRequestStatus);
         repository.updateRequestRecord(request);
 
-        log.info("Rolled up to Request: id={}, childGenerationsStatus={}, status={}",
-                requestId, childStatus, newRequestStatus);
+        log.info("Rolled up to Request: id={}, status={}", requestId, newRequestStatus);
     }
 
     /**
@@ -324,7 +320,6 @@ public class RunManagementService implements RunManagement {
         // Only update if Request was in a terminal state
         if (request.getStatus() == RequestStatus.FAILED) {
             request.setStatus(RequestStatus.PROCESSING);
-            request.setChildGenerationsStatus(ChildGenerationsStatus.PROCESSING);
             repository.updateRequestRecord(request);
 
             log.info("Reverse rolled up to Request: id={}, status={}", requestId, RequestStatus.PROCESSING);
@@ -361,7 +356,10 @@ public class RunManagementService implements RunManagement {
 
     // ==================== STATUS CALCULATION HELPERS ====================
 
-    private ChildGenerationsStatus calculateChildGenerationsStatus(List<GenerationRecord> generations) {
+    /**
+     * Calculate RequestStatus directly from child generation statuses.
+     */
+    private RequestStatus calculateRequestStatusFromGenerations(List<GenerationRecord> generations) {
         boolean anyProcessing = false;
         boolean anyFailed = false;
         boolean anySucceeded = false;
@@ -381,13 +379,13 @@ public class RunManagementService implements RunManagement {
         }
 
         if (anyProcessing) {
-            return ChildGenerationsStatus.PROCESSING;
+            return RequestStatus.PROCESSING;
         } else if (anyFailed) {
-            return ChildGenerationsStatus.FAILED;
+            return RequestStatus.FAILED;
         } else if (anySucceeded) {
-            return ChildGenerationsStatus.COMPLETED;
+            return RequestStatus.COMPLETED;
         } else {
-            return ChildGenerationsStatus.PENDING;
+            return RequestStatus.PENDING;
         }
     }
 
@@ -419,14 +417,5 @@ public class RunManagementService implements RunManagement {
         } else {
             return ChildEnhancementsStatus.PENDING;
         }
-    }
-
-    private RequestStatus mapChildGenerationsStatusToRequestStatus(ChildGenerationsStatus childStatus) {
-        return switch (childStatus) {
-            case PROCESSING -> RequestStatus.PROCESSING;
-            case COMPLETED -> RequestStatus.COMPLETED;
-            case FAILED -> RequestStatus.FAILED;
-            case PENDING -> RequestStatus.PENDING;
-        };
     }
 }

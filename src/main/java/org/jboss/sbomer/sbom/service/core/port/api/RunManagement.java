@@ -48,7 +48,7 @@ public interface RunManagement {
     
     /**
      * Roll up Generation statuses to the parent Request.
-     * Recalculates childGenerationsStatus and overall RequestStatus based on current generation states.
+     * Recalculates overall RequestStatus based on current generation states.
      *
      * @param requestId The ID of the request to update
      */

@@ -98,7 +98,6 @@ public class PanacheStatusRepository implements StatusRepository {
     public void updateRequestRecord(RequestRecord record) {
         requestRepository.find("requestId", record.getId()).firstResultOptional().ifPresent(entity -> {
             entity.setStatus(record.getStatus());
-            entity.setChildGenerationsStatus(record.getChildGenerationsStatus());
         });
     }
 

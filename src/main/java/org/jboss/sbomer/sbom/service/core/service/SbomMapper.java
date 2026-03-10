@@ -13,7 +13,6 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.PublisherRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ChildEnhancementsStatus;
-import org.jboss.sbomer.sbom.service.core.domain.enums.ChildGenerationsStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
@@ -43,7 +42,6 @@ public class SbomMapper {
         requestRecord.setId(requestsCreated.getData().getRequestId());
         requestRecord.setPublisherRecords(publisherRecords);
         requestRecord.setStatus(RequestStatus.PENDING);
-        requestRecord.setChildGenerationsStatus(ChildGenerationsStatus.PENDING);
         requestRecord.setCreationDate(requestsCreated.getContext().getTimestamp());
         return requestRecord;
     }

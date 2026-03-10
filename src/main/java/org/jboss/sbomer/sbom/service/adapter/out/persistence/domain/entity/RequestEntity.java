@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.jboss.sbomer.sbom.service.core.domain.enums.ChildGenerationsStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -44,14 +43,6 @@ public class RequestEntity extends PanacheEntityBase {
 
     @Enumerated(EnumType.STRING)
     private RequestStatus status;
-
-    /**
-     * Aggregate status of all child generations.
-     * Rolled up from individual generation statuses.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "child_generations_status")
-    private ChildGenerationsStatus childGenerationsStatus;
 
     private Instant creationDate;
 
