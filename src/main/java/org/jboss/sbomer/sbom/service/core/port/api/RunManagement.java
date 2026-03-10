@@ -40,9 +40,17 @@ public interface RunManagement {
     /**
      * Retry a failed Enhancement with top-down resurrection.
      * Creates a new EnhancementRun and updates parent Generation status.
-     * 
+     *
      * @param enhancementId The ID of the enhancement to retry
      * @return The newly created run record
      */
     EnhancementRunRecord retryEnhancement(String enhancementId);
+    
+    /**
+     * Roll up Generation statuses to the parent Request.
+     * Recalculates childGenerationsStatus and overall RequestStatus based on current generation states.
+     *
+     * @param requestId The ID of the request to update
+     */
+    void rollUpGenerationsToRequest(String requestId);
 }

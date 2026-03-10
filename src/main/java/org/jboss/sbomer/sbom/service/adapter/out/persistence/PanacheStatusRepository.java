@@ -98,6 +98,7 @@ public class PanacheStatusRepository implements StatusRepository {
     public void updateRequestRecord(RequestRecord record) {
         requestRepository.find("requestId", record.getId()).firstResultOptional().ifPresent(entity -> {
             entity.setStatus(record.getStatus());
+            entity.setChildGenerationsStatus(record.getChildGenerationsStatus());
         });
     }
 
@@ -223,6 +224,8 @@ public class PanacheStatusRepository implements StatusRepository {
             entity.setReason(record.getReason());
             entity.setTargetType(record.getTargetType());
             entity.setTargetIdentifier(record.getTargetIdentifier());
+            entity.setChildEnhancementsStatus(record.getChildEnhancementsStatus());
+            entity.setLatestResult(record.getLatestResult());
 
             if (record.getRequestId() != null) {
                 RequestEntity req = requestRepository.find("requestId", record.getRequestId()).firstResult();

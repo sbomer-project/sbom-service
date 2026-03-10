@@ -83,7 +83,7 @@ public class RunManagementService implements RunManagement {
 
         // 3. Roll up to Request (if Generation has a parent Request)
         if (generation.getRequestId() != null) {
-            rollUpGenerationToRequest(generation.getRequestId());
+            rollUpGenerationsToRequest(generation.getRequestId());
         }
     }
 
@@ -246,7 +246,8 @@ public class RunManagementService implements RunManagement {
      * Roll up Generation statuses to the parent Request.
      * Recalculates childGenerationsStatus and overall RequestStatus.
      */
-    private void rollUpGenerationToRequest(String requestId) {
+    @Override
+    public void rollUpGenerationsToRequest(String requestId) {
         log.debug("Rolling up Generations to Request: requestId={}", requestId);
 
         RequestRecord request = repository.findRequestById(requestId);
@@ -303,7 +304,7 @@ public class RunManagementService implements RunManagement {
 
         // Continue roll-up to Request if applicable
         if (generation.getRequestId() != null) {
-            rollUpGenerationToRequest(generation.getRequestId());
+            rollUpGenerationsToRequest(generation.getRequestId());
         }
     }
 
