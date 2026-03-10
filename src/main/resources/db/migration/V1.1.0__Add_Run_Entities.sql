@@ -27,7 +27,6 @@ create table enhancement_runs (
 );
 
 -- Add new fields to existing tables
-alter table requests add column child_generations_status varchar(50);
 alter table generations add column child_enhancements_status varchar(50);
 alter table generations add column latest_result varchar(50);
 alter table enhancements add column latest_result varchar(50);
