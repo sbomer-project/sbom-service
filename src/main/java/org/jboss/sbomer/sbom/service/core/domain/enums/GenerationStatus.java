@@ -2,7 +2,7 @@ package org.jboss.sbomer.sbom.service.core.domain.enums;
 
 public enum GenerationStatus {
     /** Generation created but not yet scheduled */
-    NEW,
+    PENDING,
 
     /** Generation is actively running */
     GENERATING,

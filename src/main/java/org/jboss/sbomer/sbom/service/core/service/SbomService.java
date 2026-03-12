@@ -269,7 +269,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             }
 
             // We find an enhancement with status NEW
-            if (EnhancementStatus.NEW.equals(current.getStatus())) {
+            if (EnhancementStatus.PENDING.equals(current.getStatus())) {
                 // Create the initial Run entity (Attempt #1) for this enhancement
                 EnhancementRunRecord initialRun = createInitialEnahncementRun(current);
 

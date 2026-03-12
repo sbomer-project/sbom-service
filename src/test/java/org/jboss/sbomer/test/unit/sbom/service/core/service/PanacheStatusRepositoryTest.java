@@ -71,7 +71,7 @@ public class PanacheStatusRepositoryTest {
         GenerationRecord generationRecord = new GenerationRecord();
         generationRecord.setId(UUID.randomUUID().toString());
         generationRecord.setGeneratorName("generatorName1");
-        generationRecord.setStatus(GenerationStatus.NEW);
+        generationRecord.setStatus(GenerationStatus.PENDING);
         generationRecord.setGenerationSbomUrls(List.of("https://url1"));
 
         statusRepository.saveGeneration(generationRecord);
@@ -95,7 +95,7 @@ public class PanacheStatusRepositoryTest {
         EnhancementRecord enhancementRecord = new EnhancementRecord();
         enhancementRecord.setId(UUID.randomUUID().toString());
         enhancementRecord.setEnhancerName("enhancerName1");
-        enhancementRecord.setStatus(EnhancementStatus.NEW);
+        enhancementRecord.setStatus(EnhancementStatus.PENDING);
         enhancementRecord.setEnhancedSbomUrls(List.of("https://url1"));
 
         statusRepository.saveEnhancement(enhancementRecord);

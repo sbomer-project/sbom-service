@@ -90,7 +90,7 @@ public class SbomMapper {
         generationRecord.setGeneratorOptions(mergedGeneratorOptions);
         generationRecord.setCreated(Instant.now()); // Timestamp created here
         generationRecord.setUpdated(Instant.now());
-        generationRecord.setStatus(GenerationStatus.NEW);
+        generationRecord.setStatus(GenerationStatus.PENDING);
         generationRecord.setRequestId(requestId);
         generationRecord.setTargetType(requestSpec.getTarget().getType());
         generationRecord.setTargetIdentifier(requestSpec.getTarget().getIdentifier());
@@ -111,7 +111,7 @@ public class SbomMapper {
                 enhancementRecord.setIndex(i); // Preserve order
                 enhancementRecord.setCreated(Instant.now());
                 enhancementRecord.setUpdated(Instant.now());
-                enhancementRecord.setStatus(EnhancementStatus.NEW);
+                enhancementRecord.setStatus(EnhancementStatus.PENDING);
                 enhancementRecord.setRequestId(requestId);
                 enhancementRecord.setGenerationId(generationRecord.getId());
                 enhancementRecords.add(enhancementRecord);

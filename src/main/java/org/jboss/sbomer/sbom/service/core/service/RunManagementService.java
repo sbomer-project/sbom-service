@@ -366,7 +366,7 @@ public class RunManagementService implements RunManagement {
 
         for (GenerationRecord gen : generations) {
             switch (gen.getStatus()) {
-                case NEW, GENERATING:
+                case PENDING, GENERATING:
                     anyProcessing = true;
                     break;
                 case FAILED:
@@ -396,7 +396,7 @@ public class RunManagementService implements RunManagement {
 
         for (EnhancementRecord enh : enhancements) {
             switch (enh.getStatus()) {
-                case NEW, ENHANCING:
+                case PENDING, ENHANCING:
                     anyProcessing = true;
                     break;
                 case FAILED:

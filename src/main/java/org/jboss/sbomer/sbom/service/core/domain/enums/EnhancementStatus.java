@@ -2,7 +2,7 @@ package org.jboss.sbomer.sbom.service.core.domain.enums;
 
 public enum EnhancementStatus {
     /** Enhancement created but not yet scheduled */
-    NEW,
+    PENDING,
 
     /** Enhancement is actively running */
     ENHANCING,
