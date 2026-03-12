@@ -1,11 +1,15 @@
 package org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.sbomer.sbom.service.core.domain.enums.ChildEnhancementsStatus;
+import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -74,6 +78,30 @@ public class GenerationEntity extends PanacheEntityBase {
 
     @OneToMany(mappedBy = "generation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<EnhancementEntity> enhancements = new HashSet<>();
+
+    /**
+     * Aggregate status of all child enhancements.
+     * Rolled up from individual enhancement statuses.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "child_enhancements_status")
+    private ChildEnhancementsStatus childEnhancementsStatus;
+
+    /**
+     * The result from the most recent GenerationRun.
+     * Null while actively generating, populated when run completes.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "latest_result")
+    private GenerationResult latestResult;
+
+    /**
+     * Append-only log of all execution attempts for this generation.
+     * Ordered by attempt number.
+     */
+    @OneToMany(mappedBy = "generation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("attemptNumber ASC")
+    private List<GenerationRunEntity> runs = new ArrayList<>();
 
     public void setEnhancements(Set<EnhancementEntity> enhancements) {
         this.enhancements = enhancements != null ? new HashSet<>(enhancements) : new HashSet<>();

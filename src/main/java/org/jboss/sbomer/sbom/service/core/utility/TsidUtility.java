@@ -40,12 +40,21 @@ public class TsidUtility {
     }
 
     /**
-     * Utility method to create a enhancement ID using Tsid, starting with G
+     * Utility method to create a enhancement ID using Tsid, starting with E
      *
      * @return Tsid of enhancement
      */
     public static String createUniqueEnhancementId() {
         return "E" + TsidCreator.getTsid1024().toString();
+    }
+
+    /**
+     * Utility method to create a run ID using Tsid, starting with RUN
+     *
+     * @return Tsid of run
+     */
+    public static String createUniqueRunId() {
+        return "RUN" + TsidCreator.getTsid1024().toString();
     }
 
 }

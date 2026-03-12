@@ -13,13 +13,17 @@ import java.util.stream.Collectors;
 
 import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
 import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.EnhancementEntity;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.EnhancementRunEntity;
 import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.GenerationEntity;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.GenerationRunEntity;
 import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.RequestEntity;
 import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper.EnhancementMapper;
 import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper.GenerationMapper;
 import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper.StatusMapper;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
+import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
+import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
@@ -43,6 +47,12 @@ public class PanacheStatusRepository implements StatusRepository {
 
     @Inject
     EnhancementRepository enhancementRepository;
+
+    @Inject
+    GenerationRunRepository generationRunRepository;
+
+    @Inject
+    EnhancementRunRepository enhancementRunRepository;
 
     @Inject
     StatusMapper mapper;
@@ -213,6 +223,8 @@ public class PanacheStatusRepository implements StatusRepository {
             entity.setReason(record.getReason());
             entity.setTargetType(record.getTargetType());
             entity.setTargetIdentifier(record.getTargetIdentifier());
+            entity.setChildEnhancementsStatus(record.getChildEnhancementsStatus());
+            entity.setLatestResult(record.getLatestResult());
 
             if (record.getRequestId() != null) {
                 RequestEntity req = requestRepository.find("requestId", record.getRequestId()).firstResult();
@@ -291,11 +303,11 @@ public class PanacheStatusRepository implements StatusRepository {
     @Override
     public boolean isGenerationAndEnhancementsFinished(String generationId) {
         return generationRepository.find("generationId", generationId).firstResultOptional()
-            .filter(generationEntity -> generationEntity.getStatus() == GenerationStatus.FINISHED)
+            .filter(generationEntity -> generationEntity.getStatus() == GenerationStatus.COMPLETED)
             .map(generationEntity -> {
                 List<EnhancementEntity> children = enhancementRepository.list("generation.generationId", generationId);
                 return children.isEmpty()
-                    || children.stream().allMatch(e -> e.getStatus() == EnhancementStatus.FINISHED);
+                    || children.stream().allMatch(e -> e.getStatus() == EnhancementStatus.COMPLETED);
             })
             .orElse(false);
     }
@@ -313,7 +325,7 @@ public class PanacheStatusRepository implements StatusRepository {
             .map(generationEntity -> {
                 List<EnhancementEntity> children = enhancementRepository.list("generation.generationId", generationId);
                 return !children.isEmpty() ? children.stream()
-                    .filter(e -> e.getStatus() == EnhancementStatus.FINISHED)
+                    .filter(e -> e.getStatus() == EnhancementStatus.COMPLETED)
                     .max(Comparator.comparingInt(EnhancementEntity::getIndex))
                     .map(EnhancementEntity::getEnhancedSbomUrls)
                     .orElse(generationEntity.getGenerationSbomUrls())
@@ -428,5 +440,103 @@ public class PanacheStatusRepository implements StatusRepository {
         } else {
             enhancementEntity.setEnhancedSbomUrls(null);
         }
+    }
+
+    // --- GENERATION RUNS ---
+
+    @Override
+    @Transactional
+    public void saveGenerationRun(GenerationRunRecord record) {
+        if (generationRunRepository.find("runId", record.getId()).count() > 0) {
+            throw new EntityExistsException("GenerationRun with ID " + record.getId() + " already exists.");
+        }
+
+        GenerationRunEntity entity = mapper.toGenerationRunEntity(record);
+
+        // Link to parent Generation
+        if (record.getGenerationId() != null) {
+            GenerationEntity parent = generationRepository.find("generationId", record.getGenerationId()).firstResult();
+            entity.setGeneration(parent);
+        }
+
+        generationRunRepository.persist(entity);
+    }
+
+    @Override
+    public GenerationRunRecord findGenerationRunById(String runId) {
+        return generationRunRepository.find("runId", runId)
+            .firstResultOptional()
+            .map(mapper::toGenerationRunDto)
+            .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void updateGenerationRun(GenerationRunRecord record) {
+        generationRunRepository.find("runId", record.getId()).firstResultOptional().ifPresent(entity -> {
+            entity.setAttemptNumber(record.getAttemptNumber());
+            entity.setState(record.getState());
+            entity.setReason(record.getReason());
+            entity.setMessage(record.getMessage());
+            entity.setStartTime(record.getStartTime());
+            entity.setCompletionTime(record.getCompletionTime());
+        });
+    }
+
+    @Override
+    public List<GenerationRunRecord> findGenerationRunsByGenerationId(String generationId) {
+        return generationRunRepository.list("generation.generationId", Sort.by("attemptNumber"), generationId)
+            .stream()
+            .map(mapper::toGenerationRunDto)
+            .toList();
+    }
+
+    // --- ENHANCEMENT RUNS ---
+
+    @Override
+    @Transactional
+    public void saveEnhancementRun(EnhancementRunRecord record) {
+        if (enhancementRunRepository.find("runId", record.getId()).count() > 0) {
+            throw new EntityExistsException("EnhancementRun with ID " + record.getId() + " already exists.");
+        }
+
+        EnhancementRunEntity entity = mapper.toEnhancementRunEntity(record);
+
+        // Link to parent Enhancement
+        if (record.getEnhancementId() != null) {
+            EnhancementEntity parent = enhancementRepository.find("enhancementId", record.getEnhancementId()).firstResult();
+            entity.setEnhancement(parent);
+        }
+
+        enhancementRunRepository.persist(entity);
+    }
+
+    @Override
+    public EnhancementRunRecord findEnhancementRunById(String runId) {
+        return enhancementRunRepository.find("runId", runId)
+            .firstResultOptional()
+            .map(mapper::toEnhancementRunDto)
+            .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void updateEnhancementRun(EnhancementRunRecord record) {
+        enhancementRunRepository.find("runId", record.getId()).firstResultOptional().ifPresent(entity -> {
+            entity.setAttemptNumber(record.getAttemptNumber());
+            entity.setState(record.getState());
+            entity.setReason(record.getReason());
+            entity.setMessage(record.getMessage());
+            entity.setStartTime(record.getStartTime());
+            entity.setCompletionTime(record.getCompletionTime());
+        });
+    }
+
+    @Override
+    public List<EnhancementRunRecord> findEnhancementRunsByEnhancementId(String enhancementId) {
+        return enhancementRunRepository.list("enhancement.enhancementId", Sort.by("attemptNumber"), enhancementId)
+            .stream()
+            .map(mapper::toEnhancementRunDto)
+            .toList();
     }
 }

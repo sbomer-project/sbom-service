@@ -1,0 +1,10 @@
+package org.jboss.sbomer.sbom.service.adapter.out.persistence;
+
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.GenerationRunEntity;
+
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class GenerationRunRepository implements PanacheRepositoryBase<GenerationRunEntity, String> {}
+

@@ -1,6 +1,5 @@
 package org.jboss.sbomer.sbom.service.core.service;
 
-import java.time.Instant;
 import java.util.List;
 
 import org.jboss.sbomer.events.common.GenerationRequestSpec;
@@ -8,12 +7,13 @@ import org.jboss.sbomer.events.orchestration.EnhancementCreated;
 import org.jboss.sbomer.events.orchestration.GenerationCreated;
 import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
+import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
+import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.exception.EntityNotFoundException;
 import org.jboss.sbomer.sbom.service.core.domain.exception.InvalidRetryStateException;
+import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
 import org.jboss.sbomer.sbom.service.core.port.api.SbomAdministration;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 import org.jboss.sbomer.sbom.service.core.port.spi.enhancement.EnhancementScheduler;
@@ -33,14 +33,16 @@ public class SbomAdminService implements SbomAdministration {
     GenerationScheduler generationScheduler;
     EnhancementScheduler enhancementScheduler;
     SbomMapper sbomMapper;
+    RunManagement runManagement;
 
     @Inject
     public SbomAdminService(StatusRepository statusRepository, GenerationScheduler generationScheduler,
-            EnhancementScheduler enhancementScheduler, SbomMapper sbomMapper) {
+            EnhancementScheduler enhancementScheduler, SbomMapper sbomMapper, RunManagement runManagement) {
         this.statusRepository = statusRepository;
         this.generationScheduler = generationScheduler;
         this.enhancementScheduler = enhancementScheduler;
         this.sbomMapper = sbomMapper;
+        this.runManagement = runManagement;
     }
 
     // --- READ OPERATIONS (Pass-through to Repository) ---
@@ -79,37 +81,27 @@ public class SbomAdminService implements SbomAdministration {
 
     @WithSpan
     public void retryGeneration(@SpanAttribute("generation.id") String generationId) {
-        // Repository implementation handles locking/transaction here
-        GenerationRecord record = statusRepository.findGenerationById(generationId);
-
-        if (record == null) {
-            throw new EntityNotFoundException("Generation with ID " + generationId + " not found");
-        }
-
-        if (GenerationStatus.FAILED != record.getStatus()) {
-            throw new InvalidRetryStateException("Cannot retry generation in status: " + record.getStatus()
-                    + ". Only FAILED generations can be retried.");
-        }
-
         log.info("Retrying generation: {}", generationId);
 
-        // 1. Reset the status
-        record.setStatus(GenerationStatus.NEW);
-        record.setReason(null);
-        record.setResult(null);
-        record.setFinished(null);
-        record.setUpdated(Instant.now());
+        // 1. Use RunManagement to create new Run and resurrect the Generation
+        // This handles: creating new Run, updating Generation status, reverse roll-up to Request
+        GenerationRunRecord newRun = runManagement.retryGeneration(generationId);
+        
+        log.info("Created new GenerationRun for retry: runId={}, attempt={}",
+                newRun.getId(), newRun.getAttemptNumber());
 
-        // 2. Save to DB (Transaction/Lock handled by Adapter)
-        statusRepository.updateGeneration(record);
+        // 2. Fetch the updated Generation record
+        GenerationRecord record = statusRepository.findGenerationById(generationId);
 
-        // 3. Reconstruct Context
+        // 3. Reconstruct Context and schedule the retry
         GenerationRequestSpec originalSpec = sbomMapper.toGenerationRequestSpec(record);
         String retryCorrelationId = record.getRequestId();
 
         // 4. Build & Schedule Event
         GenerationCreated retryEvent = sbomMapper.toGenerationCreatedEvent(record, originalSpec, retryCorrelationId);
         generationScheduler.schedule(retryEvent);
+        
+        log.info("Successfully scheduled retry for generation: {}", generationId);
     }
 
     @Override
@@ -129,16 +121,12 @@ public class SbomAdminService implements SbomAdministration {
 
     @WithSpan
     public void retryEnhancement(@SpanAttribute("enhancement.id") String enhancementId) {
-        // Repository implementation handles locking/transaction here
-        EnhancementRecord record = statusRepository.findEnhancementById(enhancementId);
+        log.info("Retrying enhancement: {}", enhancementId);
 
+        // 1. Fetch the Enhancement to get parent Generation ID
+        EnhancementRecord record = statusRepository.findEnhancementById(enhancementId);
         if (record == null) {
             throw new EntityNotFoundException("Enhancement with ID " + enhancementId + " not found");
-        }
-
-        if (EnhancementStatus.FAILED != record.getStatus()) {
-            throw new InvalidRetryStateException("Cannot retry enhancement in status: " + record.getStatus()
-                    + ". Only FAILED enhancements can be retried.");
         }
 
         GenerationRecord parentGeneration = statusRepository.findGenerationById(record.getGenerationId());
@@ -146,24 +134,24 @@ public class SbomAdminService implements SbomAdministration {
             throw new InvalidRetryStateException("Cannot retry enhancement because parent generation is missing.");
         }
 
-        log.info("Retrying enhancement: {}", enhancementId);
+        // 2. Use RunManagement to create new Run and resurrect the Enhancement
+        // This handles: creating new Run, updating Enhancement status, reverse roll-up to Generation/Request
+        EnhancementRunRecord newRun = runManagement.retryEnhancement(enhancementId);
+        
+        log.info("Created new EnhancementRun for retry: runId={}, attempt={}",
+                newRun.getId(), newRun.getAttemptNumber());
 
-        // 1. Reset the status
-        record.setStatus(EnhancementStatus.NEW);
-        record.setReason(null);
-        record.setResult(null);
-        record.setFinished(null);
-        record.setUpdated(Instant.now());
+        // 3. Fetch the updated Enhancement record
+        record = statusRepository.findEnhancementById(enhancementId);
 
-        // 2. Save to DB (Transaction/Lock handled by Adapter)
-        statusRepository.updateEnhancement(record);
-
-        // 3. Determine Inputs
+        // 4. Determine Inputs
         EnhancementRecord lastFinished = findPreviousEnhancement(parentGeneration, record.getIndex());
 
-        // 4. Build & Schedule Event
+        // 5. Build & Schedule Event
         EnhancementCreated retryEvent = sbomMapper.toEnhancementCreatedEvent(record, lastFinished, parentGeneration);
         enhancementScheduler.schedule(retryEvent);
+        
+        log.info("Successfully scheduled retry for enhancement: {}", enhancementId);
     }
 
     /**
@@ -179,6 +167,28 @@ public class SbomAdminService implements SbomAdministration {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(
                         "Could not find previous enhancement with index " + (targetIndex - 1)));
+    }
+
+    // --- RUN QUERY OPERATIONS ---
+
+    @Override
+    public List<GenerationRunRecord> getRunsForGeneration(String generationId) {
+        return statusRepository.findGenerationRunsByGenerationId(generationId);
+    }
+
+    @Override
+    public GenerationRunRecord getGenerationRun(String runId) {
+        return statusRepository.findGenerationRunById(runId);
+    }
+
+    @Override
+    public List<EnhancementRunRecord> getRunsForEnhancement(String enhancementId) {
+        return statusRepository.findEnhancementRunsByEnhancementId(enhancementId);
+    }
+
+    @Override
+    public EnhancementRunRecord getEnhancementRun(String runId) {
+        return statusRepository.findEnhancementRunById(runId);
     }
 
 }

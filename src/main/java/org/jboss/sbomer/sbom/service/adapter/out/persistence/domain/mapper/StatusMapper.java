@@ -1,7 +1,11 @@
 package org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.mapper;
 
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.EnhancementRunEntity;
+import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.GenerationRunEntity;
 import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.PublisherEntity;
 import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.RequestEntity;
+import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
+import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.PublisherRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.mapstruct.Mapper;
@@ -28,4 +32,24 @@ public interface StatusMapper {
 
     @Mapping(target = "dbId", ignore = true) // Ignore DB ID
     PublisherEntity toPublisherEntity(PublisherRecord dto);
+
+    // --- GenerationRun Mapping ---
+    @Mapping(target = "id", source = "runId")
+    @Mapping(target = "generationId", source = "generation.generationId")
+    GenerationRunRecord toGenerationRunDto(GenerationRunEntity entity);
+
+    @Mapping(target = "runId", source = "id")
+    @Mapping(target = "dbId", ignore = true)
+    @Mapping(target = "generation", ignore = true) // Set manually in repository
+    GenerationRunEntity toGenerationRunEntity(GenerationRunRecord dto);
+
+    // --- EnhancementRun Mapping ---
+    @Mapping(target = "id", source = "runId")
+    @Mapping(target = "enhancementId", source = "enhancement.enhancementId")
+    EnhancementRunRecord toEnhancementRunDto(EnhancementRunEntity entity);
+
+    @Mapping(target = "runId", source = "id")
+    @Mapping(target = "dbId", ignore = true)
+    @Mapping(target = "enhancement", ignore = true) // Set manually in repository
+    EnhancementRunEntity toEnhancementRunEntity(EnhancementRunRecord dto);
 }

@@ -1,9 +1,19 @@
 package org.jboss.sbomer.sbom.service.core.domain.enums;
 
 public enum EnhancementStatus {
-    NEW,
-    SCHEDULED,
+    /** Enhancement created but not yet scheduled */
+    PENDING,
+
+    /** Enhancement is actively running */
     ENHANCING,
-    FINISHED,
-    FAILED
+
+    /** Enhancement completed successfully */
+    COMPLETED,
+
+    /** Enhancement failed (after all retry attempts) */
+    FAILED;
+
+    public boolean isFinal() {
+        return this == COMPLETED || this == FAILED;
+    }
 }
