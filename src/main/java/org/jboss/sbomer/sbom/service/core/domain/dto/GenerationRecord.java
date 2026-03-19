@@ -25,6 +25,10 @@ public class GenerationRecord {
      * Mapped from the configuration recipe.
      */
     private Map<String, String> generatorOptions;
+    /**
+     * Options provided by the handler that originally created the request.
+     */
+    private Map<String, String> handlerProvidedOptions;
     private Instant created;
     private Instant updated;
     private Instant finished;

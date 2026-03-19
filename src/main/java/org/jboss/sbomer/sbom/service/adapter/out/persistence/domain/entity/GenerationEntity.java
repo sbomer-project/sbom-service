@@ -50,6 +50,12 @@ public class GenerationEntity extends PanacheEntityBase {
     @Column(name = "opt_value")
     private Map<String, String> generatorOptions = new HashMap<>();
 
+    @ElementCollection
+    @CollectionTable(name = "generation_handler_options", joinColumns = @JoinColumn(name = "generation_db_id"))
+    @MapKeyColumn(name = "opt_key")
+    @Column(name = "opt_value")
+    private Map<String, String> handlerProvidedOptions = new HashMap<>();
+
     private Instant created;
 
     private Instant updated;
