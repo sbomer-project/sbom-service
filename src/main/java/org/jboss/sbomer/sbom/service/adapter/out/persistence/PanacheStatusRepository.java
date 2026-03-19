@@ -241,6 +241,16 @@ public class PanacheStatusRepository implements StatusRepository {
                 entity.setGeneratorOptions(null);
             }
 
+            if (record.getHandlerProvidedOptions() != null) {
+                if (entity.getHandlerProvidedOptions() == null) {
+                    entity.setHandlerProvidedOptions(new HashMap<>());
+                }
+                entity.getHandlerProvidedOptions().clear();
+                entity.getHandlerProvidedOptions().putAll(record.getHandlerProvidedOptions());
+            } else {
+                entity.setHandlerProvidedOptions(null);
+            }
+
             if (record.getGenerationSbomUrls() != null) {
                 entity.getGenerationSbomUrls().clear();
                 entity.getGenerationSbomUrls().addAll(record.getGenerationSbomUrls());

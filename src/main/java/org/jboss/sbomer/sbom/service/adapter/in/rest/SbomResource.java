@@ -177,13 +177,13 @@ public class SbomResource {
     @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response retryGeneration(
             @PathParam("id") @NotBlank(message = "Generation ID cannot be blank") String generationId) {
-        
+
         log.debug("Retry requested for generation: {}", generationId);
-        
+
         sbomAdministration.retryGeneration(generationId);
-        
+
         log.info("Successfully scheduled retry for generation: {}", generationId);
-        
+
         return Response.accepted()
                 .entity(new RetryResponse("Retry scheduled", generationId))
                 .build();
@@ -240,13 +240,13 @@ public class SbomResource {
     @APIResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class)))
     public Response retryEnhancement(
             @PathParam("id") @NotBlank(message = "Enhancement ID cannot be blank") String enhancementId) {
-        
+
         log.debug("Retry requested for enhancement: {}", enhancementId);
-        
+
         sbomAdministration.retryEnhancement(enhancementId);
-        
+
         log.info("Successfully scheduled retry for enhancement: {}", enhancementId);
-        
+
         return Response.accepted()
                 .entity(new RetryResponse("Retry scheduled", enhancementId))
                 .build();
@@ -344,7 +344,7 @@ public class SbomResource {
         // We return the batch RequestId so the user can track it.
         String requestId = requestsCreatedEvent.getData().getRequestId();
         log.info("Successfully triggered generation with request ID: {}", requestId);
-        
+
         return Response.accepted(new TriggerResponse(requestId)).build();
     }
 
@@ -412,7 +412,7 @@ public class SbomResource {
         if (dto.version() == null) {
             throw new ValidationException("Publisher version cannot be null");
         }
-        
+
         return PublisherSpec.newBuilder()
                 .setName(dto.name())
                 .setVersion(dto.version())
@@ -434,7 +434,7 @@ public class SbomResource {
         if (dto.target().identifier() == null) {
             throw new ValidationException("Target identifier cannot be null");
         }
-        
+
         Target target = Target.newBuilder()
                 .setType(dto.target().type())
                 .setIdentifier(dto.target().identifier())
@@ -444,6 +444,7 @@ public class SbomResource {
                 // A new, unique ID for this specific generation task
                 .setGenerationId(TsidUtility.createUniqueGenerationId())
                 .setTarget(target)
+                .setHandlerProvidedOptions(dto.handlerProvidedOptions())
                 .build();
     }
 }
