@@ -111,7 +111,7 @@ public class PanacheStatusRepository implements StatusRepository {
 
     @Override
     public Page<RequestRecord> findAllRequests(int pageIndex, int pageSize) {
-        PanacheQuery<RequestEntity> query = requestRepository.findAll(Sort.by("dbId"));
+        PanacheQuery<RequestEntity> query = requestRepository.findAll(Sort.descending("dbId"));
         query.page(pageIndex, pageSize);
         List<RequestRecord> records = query.list().stream().map(mapper::toDto).toList();
         return Page.<RequestRecord>builder()
@@ -158,7 +158,7 @@ public class PanacheStatusRepository implements StatusRepository {
 
     @Override
     public Page<GenerationRecord> findAllGenerations(int pageIndex, int pageSize) {
-        PanacheQuery<GenerationEntity> query = generationRepository.findAll(Sort.by("dbId"));
+        PanacheQuery<GenerationEntity> query = generationRepository.findAll(Sort.descending("dbId"));
         query.page(pageIndex, pageSize);
         List<GenerationRecord> records = query.list().stream().map(generationMapper::toDto).toList();
 
@@ -189,7 +189,7 @@ public class PanacheStatusRepository implements StatusRepository {
     @Override
     public Page<GenerationRecord> findGenerationsByRequestId(String requestId, int pageIndex, int pageSize) {
         PanacheQuery<GenerationEntity> query = generationRepository.find("request.requestId",
-            Sort.by("dbId"), requestId);
+            Sort.descending("dbId"), requestId);
         query.page(pageIndex, pageSize);
         List<GenerationRecord> records = query.list().stream().map(generationMapper::toDto).toList();
 
@@ -357,7 +357,7 @@ public class PanacheStatusRepository implements StatusRepository {
 
     @Override
     public Page<EnhancementRecord> findAllEnhancements(int pageIndex, int pageSize) {
-        PanacheQuery<EnhancementEntity> query = enhancementRepository.findAll(Sort.by("dbId"));
+        PanacheQuery<EnhancementEntity> query = enhancementRepository.findAll(Sort.descending("dbId"));
         query.page(pageIndex, pageSize);
         List<EnhancementRecord> records = query.list().stream().map(enhancementMapper::toDto).toList();
 
