@@ -79,6 +79,7 @@ public class PanacheStatusRepositoryTest {
         generationRecord.setGeneratorName("generatorName2");
         generationRecord.setStatus(GenerationStatus.COMPLETED);
         generationRecord.setGenerationSbomUrls(List.of("https://url1", "https://url2"));
+        generationRecord.setFinalSbomUrls(List.of("https://final1", "https://final2"));
 
         statusRepository.updateGeneration(generationRecord);
 
@@ -87,6 +88,7 @@ public class PanacheStatusRepositoryTest {
         assertThat(updated.getGeneratorName()).isEqualTo("generatorName2");
         assertThat(updated.getStatus()).isEqualTo(GenerationStatus.COMPLETED);
         assertThat(updated.getGenerationSbomUrls()).containsExactly("https://url1", "https://url2");
+        assertThat(updated.getFinalSbomUrls()).containsExactly("https://final1", "https://final2");
     }
 
     @Test

@@ -72,6 +72,8 @@ public class MapperTest {
         generationRecord.setTargetType("image");
         generationRecord.setGenerationSbomUrls(List.of("https://url1", "https://url2"));
 
+        generationRecord.setFinalSbomUrls(List.of("https://final1"));
+
         EnhancementRecord enhancementRecord = new EnhancementRecord();
         String enhancementId = UUID.randomUUID().toString();
         enhancementRecord.setId(enhancementId);
@@ -86,6 +88,7 @@ public class MapperTest {
         assertThat(generationEntity.getEnhancements()).hasSize(1);
         assertThat(generationEntity.getEnhancements()).element(0).extracting("enhancementId").isEqualTo(enhancementId);
         assertThat(generationEntity.getGenerationSbomUrls()).containsExactly("https://url1", "https://url2");
+        assertThat(generationEntity.getFinalSbomUrls()).containsExactly("https://final1");
 
         GenerationRecord generationMapperDto = generationMapper.toDto(generationEntity);
         assertThat(generationMapperDto.getId()).isEqualTo(generationId);
@@ -94,6 +97,7 @@ public class MapperTest {
         // DTO uses "id"
         assertThat(generationMapperDto.getEnhancements()).element(0).extracting("id").isEqualTo(enhancementId);
         assertThat(generationMapperDto.getGenerationSbomUrls()).containsExactly("https://url1", "https://url2");
+        assertThat(generationMapperDto.getFinalSbomUrls()).containsExactly("https://final1");
     }
 
     @Test

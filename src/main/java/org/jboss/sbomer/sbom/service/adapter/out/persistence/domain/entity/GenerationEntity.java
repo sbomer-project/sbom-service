@@ -82,6 +82,11 @@ public class GenerationEntity extends PanacheEntityBase {
     @Column(name = "url")
     private Set<String> generationSbomUrls = new HashSet<>();
 
+    @ElementCollection
+    @CollectionTable(name = "final_sbom_urls", joinColumns = @JoinColumn(name = "generation_db_id"))
+    @Column(name = "url")
+    private Set<String> finalSbomUrls = new HashSet<>();
+
     @OneToMany(mappedBy = "generation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<EnhancementEntity> enhancements = new HashSet<>();
 

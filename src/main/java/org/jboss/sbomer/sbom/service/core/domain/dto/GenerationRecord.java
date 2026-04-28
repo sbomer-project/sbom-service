@@ -38,7 +38,10 @@ public class GenerationRecord {
     private String requestId;
     private String targetType;
     private String targetIdentifier;
+    // SBOMs resulting from the base generation
     private Collection<String> generationSbomUrls;
+    // SBOMs resulting from the full generator->enhancer process
+    private Collection<String> finalSbomUrls;
     private Collection<EnhancementRecord> enhancements;
     private ChildEnhancementsStatus childEnhancementsStatus;
     private GenerationResult latestResult;

@@ -228,6 +228,22 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
     private void triggerNextStepForGeneration(String generationId, String requestId) {
 
         if (statusRepository.isGenerationAndEnhancementsFinished(generationId)) {
+            // --- Calculate and persist the finalSbomUrls ---
+            GenerationRecord generationRecord = statusRepository.findGenerationById(generationId);
+
+            Collection<String> finalUrls;
+            if (generationRecord.getEnhancements() == null || generationRecord.getEnhancements().isEmpty()) {
+                finalUrls = generationRecord.getGenerationSbomUrls();
+            } else {
+                finalUrls = generationRecord.getEnhancements().stream()
+                    .max(Comparator.comparingInt(EnhancementRecord::getIndex))
+                    .map(EnhancementRecord::getEnhancedSbomUrls)
+                    .orElse(generationRecord.getGenerationSbomUrls());
+            }
+
+            generationRecord.setFinalSbomUrls(finalUrls);
+            statusRepository.updateGeneration(generationRecord);
+
             if (statusRepository.isAllGenerationRequestsFinished(requestId)) {
                 // ALL Generations and Enhancements finished
                 RequestRecord requestRecord = statusRepository.findRequestById(requestId);

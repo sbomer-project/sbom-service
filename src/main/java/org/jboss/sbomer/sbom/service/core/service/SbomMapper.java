@@ -225,29 +225,35 @@ public class SbomMapper {
 
         // First build the context
         ContextSpec context = ContextSpec.newBuilder()
-                .setEventId(UUID.randomUUID().toString())
-                .setType("RequestsFinished")
-                .setSource(ApplicationConstants.COMPONENT_NAME)
-                .setCorrelationId(requestRecord.getId())
-                .setEventVersion("1.0")
-                .setTimestamp(Instant.now())
-                .build();
+            .setEventId(UUID.randomUUID().toString())
+            .setType("RequestsFinished")
+            .setSource(ApplicationConstants.COMPONENT_NAME)
+            .setCorrelationId(requestRecord.getId())
+            .setEventVersion("1.0")
+            .setTimestamp(Instant.now())
+            .build();
 
         List<CompletedGeneration>  completedGenerations = new ArrayList<>();
         for (GenerationRecord generationRecord : requestRecord.getGenerationRecords()) {
             Target target = Target.newBuilder()
-                    .setType(generationRecord.getTargetType())
-                    .setIdentifier(generationRecord.getTargetIdentifier())
-                    .build();
+                .setType(generationRecord.getTargetType())
+                .setIdentifier(generationRecord.getTargetIdentifier())
+                .build();
             GenerationRequestSpec generationRequestSpec = GenerationRequestSpec.newBuilder()
-                    .setGenerationId(generationRecord.getId())
-                    .setTarget(target)
-                    .setHandlerProvidedOptions(generationRecord.getHandlerProvidedOptions())
-                    .build();
+                .setGenerationId(generationRecord.getId())
+                .setTarget(target)
+                .setHandlerProvidedOptions(generationRecord.getHandlerProvidedOptions())
+                .build();
+
+            // Directly read finalSbomUrls from the record
+            Collection<String> finalUrls = generationRecord.getFinalSbomUrls() != null
+                ? generationRecord.getFinalSbomUrls()
+                : Collections.emptySet();
+
             CompletedGeneration completedGeneration = CompletedGeneration.newBuilder()
-                    .setGenerationRequest(generationRequestSpec)
-                    .setFinalSbomUrls(List.copyOf(determineFinalUrls(generationRecord))) // TODO: Convert to Collection?
-                    .build();
+                .setGenerationRequest(generationRequestSpec)
+                .setFinalSbomUrls(List.copyOf(finalUrls))
+                .build();
 
             completedGenerations.add(completedGeneration);
         }
@@ -255,34 +261,20 @@ public class SbomMapper {
         List<PublisherSpec> publisherSpecs = new ArrayList<>();
         if (requestRecord.getPublisherRecords() != null) {
             publisherSpecs = requestRecord.getPublisherRecords().stream()
-                    .map(this::toPublisherSpec)
-                    .toList();
+                .map(this::toPublisherSpec)
+                .toList();
         }
 
         RequestsFinishedData requestsFinishedData = RequestsFinishedData.newBuilder()
-                .setRequestId(requestRecord.getId())
-                .setCompletedGenerations(completedGenerations)
-                .setPublishers(publisherSpecs) // TODO
-                .build();
+            .setRequestId(requestRecord.getId())
+            .setCompletedGenerations(completedGenerations)
+            .setPublishers(publisherSpecs) // TODO
+            .build();
 
         return RequestsFinished.newBuilder()
-                .setContext(context)
-                .setData(requestsFinishedData)
-                .build();
-    }
-
-    private Collection<String> determineFinalUrls(GenerationRecord record) {
-        // If no enhancements, or list is null, return base generation URLs
-        if (record.getEnhancements() == null || record.getEnhancements().isEmpty()) {
-            return record.getGenerationSbomUrls();
-        }
-
-        // Find the enhancement with the highest index that has URLs
-        // Since this is only called when requests are finished, we assume the chain completed successfully
-        return record.getEnhancements().stream()
-                .max(Comparator.comparingInt(EnhancementRecord::getIndex))
-                .map(EnhancementRecord::getEnhancedSbomUrls)
-                .orElse(record.getGenerationSbomUrls());
+            .setContext(context)
+            .setData(requestsFinishedData)
+            .build();
     }
 
 }
