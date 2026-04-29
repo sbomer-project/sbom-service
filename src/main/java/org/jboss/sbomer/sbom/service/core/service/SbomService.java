@@ -235,10 +235,12 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             if (generationRecord.getEnhancements() == null || generationRecord.getEnhancements().isEmpty()) {
                 finalUrls = generationRecord.getGenerationSbomUrls();
             } else {
+                // We know enhancements exist. If the max index returns null URLs,
+                // it means the final step failed to produce output. Return an empty set.
                 finalUrls = generationRecord.getEnhancements().stream()
                     .max(Comparator.comparingInt(EnhancementRecord::getIndex))
                     .map(EnhancementRecord::getEnhancedSbomUrls)
-                    .orElse(generationRecord.getGenerationSbomUrls());
+                    .orElse(Collections.emptySet());
             }
 
             generationRecord.setFinalSbomUrls(finalUrls);
