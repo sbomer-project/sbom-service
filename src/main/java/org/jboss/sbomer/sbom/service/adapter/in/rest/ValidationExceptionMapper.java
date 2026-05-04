@@ -1,9 +1,11 @@
 package org.jboss.sbomer.sbom.service.adapter.in.rest;
 
 import java.time.Instant;
-import java.util.Map;
 
+import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.ErrorResponse;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.exception.ValidationException;
+import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -12,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Exception mapper for ValidationException.
- * Returns HTTP 400 (Bad Request) with structured error response.
+ * Returns HTTP 400 (Bad Request) with structured error response using result+reason+status pattern.
  */
 @Provider
 @Slf4j
@@ -20,16 +22,23 @@ public class ValidationExceptionMapper implements ExceptionMapper<ValidationExce
 
     @Override
     public Response toResponse(ValidationException exception) {
-        log.warn("Validation error: {}", exception.getMessage());
+        ErrorResult result = ErrorMapper.fromException(exception);
+        
+        log.warn("Validation error: result={} reason={}", result, exception.getMessage());
+        
+        ErrorResponse errorResponse = new ErrorResponse(
+            result,
+            exception.getMessage(),
+            Response.Status.BAD_REQUEST.getStatusCode(),
+            result.getCategory(),
+            null, // correlationId - could be extracted from context if available
+            null, // generationId
+            null, // enhancementId
+            Instant.now().toString()
+        );
         
         return Response.status(Response.Status.BAD_REQUEST)
-                .entity(Map.of(
-                    "error", "Validation Error",
-                    "message", exception.getMessage(),
-                    "status", 400,
-                    "timestamp", Instant.now().toString()
-                ))
+                .entity(errorResponse)
                 .build();
     }
 }
-
