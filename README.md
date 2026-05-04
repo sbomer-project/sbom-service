@@ -95,11 +95,56 @@ View Generations for a Request:
 curl -s http://localhost:8080/api/v1/requests/{requestId}/generations | jq
 ```
 
-### 3.Handling Failures (Retries)
+### 3. Handling Failures (Retries)
 
 The system employs a "Silent Failure" strategy. If a Generation or Enhancement fails, the chain stops immediately to prevent "Zombie" processes. No final notification is sent.
 
-To recover, an Admin must manually retry the specific failed record.
+#### Automatic Retries
+
+The service supports **automatic immediate retry** for transient failures. When enabled, failed generations and enhancements are automatically retried based on error type configuration.
+
+**Configuration** (`application.properties`):
+
+```properties
+# Enable/disable automatic retry globally
+sbomer.retry.enabled=false  # Default: disabled for safety
+
+# Configure max retry attempts per error type
+sbomer.retry.generation.err-oom.max-attempts=3
+sbomer.retry.generation.err-system.max-attempts=5
+sbomer.retry.generation.err-post.max-attempts=3
+sbomer.retry.generation.err-general.max-attempts=2
+
+# Non-retryable errors (permanent failures)
+sbomer.retry.generation.err-config-invalid.max-attempts=0
+sbomer.retry.generation.err-config-missing.max-attempts=0
+```
+
+**How It Works:**
+- When a generation/enhancement fails, the service checks if the error is retryable
+- If retry is allowed and max attempts not reached, a new run is created immediately
+- Retries are transparent to generators/enhancers (they see normal requests)
+- Each retry increments the attempt number tracked in the Run entity
+
+**Monitoring Retries:**
+
+View all runs for a generation (including retries):
+```shell script
+curl -s http://localhost:8080/api/v1/generations/{generationId}/runs | jq
+```
+
+Query retry statistics:
+```sql
+-- Find generations with multiple attempts
+SELECT generation_id, COUNT(*) as attempts
+FROM generation_run
+GROUP BY generation_id
+HAVING COUNT(*) > 1;
+```
+
+#### Manual Retries
+
+For cases where automatic retry is disabled or exhausted, admins can manually retry failed records.
 
 Retry a Failed Generation: Resets status to NEW and re-schedules the generation event.
 

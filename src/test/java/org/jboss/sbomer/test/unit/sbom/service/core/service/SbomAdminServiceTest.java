@@ -95,10 +95,11 @@ class SbomAdminServiceTest {
         // Mock RunManagement to return new run
         when(runManagement.retryGeneration("gen-1")).thenReturn(newRun);
         
-        // After retry, the record should be updated by RunManagement
+        // After retry, the record should be updated by RunManagement to PENDING
+        // (not GENERATING) so the normal state machine can process it
         GenerationRecord updatedRecord = new GenerationRecord();
         updatedRecord.setId("gen-1");
-        updatedRecord.setStatus(GenerationStatus.GENERATING);
+        updatedRecord.setStatus(GenerationStatus.PENDING);
         updatedRecord.setRequestId("req-1");
         
         when(statusRepository.findGenerationById("gen-1")).thenReturn(updatedRecord);
@@ -188,10 +189,11 @@ class SbomAdminServiceTest {
         // Mock RunManagement to return new run
         when(runManagement.retryEnhancement("enh-2")).thenReturn(newRun);
         
-        // After retry, the record should be updated by RunManagement
+        // After retry, the record should be updated by RunManagement to PENDING
+        // (not ENHANCING) so the normal state machine can process it
         EnhancementRecord updatedRecord = new EnhancementRecord();
         updatedRecord.setId("enh-2");
-        updatedRecord.setStatus(EnhancementStatus.ENHANCING);
+        updatedRecord.setStatus(EnhancementStatus.PENDING);
         updatedRecord.setGenerationId("gen-1");
         updatedRecord.setIndex(1);
         

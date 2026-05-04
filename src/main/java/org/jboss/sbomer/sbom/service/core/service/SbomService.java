@@ -48,12 +48,13 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
     RequestsFinishedNotifier requestsFinishedNotifier;
     FailureNotifier failureNotifier;
     RunManagement runManagement;
+    AutomaticRetryService automaticRetryService;
 
     @Inject
     public SbomService(GenerationScheduler generationScheduler, EnhancementScheduler enhancementScheduler,
             SbomMapper sbomMapper, StatusRepository statusRepository, RecipeBuilder recipeBuilder,
             RequestsFinishedNotifier requestsFinishedNotifier, FailureNotifier failureNotifier,
-            RunManagement runManagement) {
+            RunManagement runManagement, AutomaticRetryService automaticRetryService) {
         this.generationScheduler = generationScheduler;
         this.enhancementScheduler = enhancementScheduler;
         this.sbomMapper = sbomMapper;
@@ -62,6 +63,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
         this.requestsFinishedNotifier = requestsFinishedNotifier;
         this.failureNotifier = failureNotifier;
         this.runManagement = runManagement;
+        this.automaticRetryService = automaticRetryService;
     }
 
     // Create recipes for each generation requested from the source and schedule
@@ -165,6 +167,13 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                         .orElse(GenerationResult.ERR_GENERAL);
                 String failureReason = generationUpdate.getData().getReason();
                 runManagement.completeGenerationRun(failedRunId, failureResult, failureReason);
+                
+                // Try automatic immediate retry
+                boolean retried = automaticRetryService.tryRetryGeneration(generationId, failureResult);
+                if (!retried) {
+                    log.info("Generation {} failed and will not be retried: error={}, reason={}", 
+                             generationId, failureResult, failureReason);
+                }
                 break;
         }
     }
@@ -221,6 +230,13 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                         .orElse(EnhancementResult.ERR_GENERAL);
                 String failureReason = enhancementUpdate.getData().getReason();
                 runManagement.completeEnhancementRun(failedRunId, failureResult, failureReason);
+                
+                // Try automatic immediate retry
+                boolean retried = automaticRetryService.tryRetryEnhancement(enhancementId, failureResult);
+                if (!retried) {
+                    log.info("Enhancement {} failed and will not be retried: error={}, reason={}", 
+                             enhancementId, failureResult, failureReason);
+                }
                 break;
         }
     }

@@ -142,6 +142,10 @@ public class RunManagementService implements RunManagement {
         }
 
         // 2. Validate that it's in a retryable state
+        if (generation.getStatus() == GenerationStatus.PENDING_RETRY) {
+            throw new InvalidRetryStateException(
+                    "Retry already in progress for generation: " + generationId);
+        }
         if (generation.getStatus() != GenerationStatus.FAILED) {
             throw new InvalidRetryStateException(
                     "Generation must be in FAILED state to retry. Current state: " + generation.getStatus());
@@ -168,14 +172,16 @@ public class RunManagementService implements RunManagement {
 
         log.info("Created new GenerationRun: runId={}, attempt={}", newRun.getId(), nextAttempt);
 
-        // 5. Resurrect the Generation (FAILED -> GENERATING)
-        generation.setStatus(GenerationStatus.GENERATING);
+        // 5. Resurrect the Generation (FAILED -> PENDING_RETRY)
+        // PENDING_RETRY clearly indicates this is a retry attempt (internal tracking only)
+        // External systems don't receive status in events, so retry is transparent
+        generation.setStatus(GenerationStatus.PENDING_RETRY);
         generation.setLatestResult(null); // Clear the failure reason
         generation.setUpdated(Instant.now());
         generation.setFinished(null); // No longer finished
         repository.updateGeneration(generation);
 
-        log.info("Resurrected Generation: id={}, status={}", generationId, GenerationStatus.GENERATING);
+        log.info("Resurrected Generation: id={}, status={}", generationId, GenerationStatus.PENDING_RETRY);
 
         // 6. Reverse roll-up to Request (if applicable)
         if (generation.getRequestId() != null) {
@@ -196,6 +202,10 @@ public class RunManagementService implements RunManagement {
         }
 
         // 2. Validate that it's in a retryable state
+        if (enhancement.getStatus() == EnhancementStatus.PENDING_RETRY) {
+            throw new InvalidRetryStateException(
+                    "Retry already in progress for enhancement: " + enhancementId);
+        }
         if (enhancement.getStatus() != EnhancementStatus.FAILED) {
             throw new InvalidRetryStateException(
                     "Enhancement must be in FAILED state to retry. Current state: " + enhancement.getStatus());
@@ -222,14 +232,16 @@ public class RunManagementService implements RunManagement {
 
         log.info("Created new EnhancementRun: runId={}, attempt={}", newRun.getId(), nextAttempt);
 
-        // 5. Resurrect the Enhancement (FAILED -> ENHANCING)
-        enhancement.setStatus(EnhancementStatus.ENHANCING);
+        // 5. Resurrect the Enhancement (FAILED -> PENDING_RETRY)
+        // PENDING_RETRY clearly indicates this is a retry attempt (internal tracking only)
+        // External systems don't receive status in events, so retry is transparent
+        enhancement.setStatus(EnhancementStatus.PENDING_RETRY);
         enhancement.setLatestResult(null); // Clear the failure reason
         enhancement.setUpdated(Instant.now());
         enhancement.setFinished(null); // No longer finished
         repository.updateEnhancement(enhancement);
 
-        log.info("Resurrected Enhancement: id={}, status={}", enhancementId, EnhancementStatus.ENHANCING);
+        log.info("Resurrected Enhancement: id={}, status={}", enhancementId, EnhancementStatus.PENDING_RETRY);
 
         // 6. Reverse roll-up to Generation (if applicable)
         if (enhancement.getGenerationId() != null) {
@@ -366,7 +378,7 @@ public class RunManagementService implements RunManagement {
 
         for (GenerationRecord gen : generations) {
             switch (gen.getStatus()) {
-                case PENDING, GENERATING:
+                case PENDING, PENDING_RETRY, GENERATING:
                     anyProcessing = true;
                     break;
                 case FAILED:
@@ -396,7 +408,7 @@ public class RunManagementService implements RunManagement {
 
         for (EnhancementRecord enh : enhancements) {
             switch (enh.getStatus()) {
-                case PENDING, ENHANCING:
+                case PENDING, PENDING_RETRY, ENHANCING:
                     anyProcessing = true;
                     break;
                 case FAILED:
