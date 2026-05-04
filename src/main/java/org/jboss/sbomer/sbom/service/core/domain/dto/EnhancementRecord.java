@@ -36,8 +36,6 @@ public class EnhancementRecord {
     private Instant updated;
     private Instant finished;
     private EnhancementStatus status;
-    private Integer result;
-    private String reason;
     private String requestId;
     private Collection<String> enhancedSbomUrls;
     private String generationId;

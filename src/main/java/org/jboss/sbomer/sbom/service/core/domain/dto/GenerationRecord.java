@@ -33,8 +33,6 @@ public class GenerationRecord {
     private Instant updated;
     private Instant finished;
     private GenerationStatus status;
-    private Integer result;
-    private String reason;
     private String requestId;
     private String targetType;
     private String targetIdentifier;

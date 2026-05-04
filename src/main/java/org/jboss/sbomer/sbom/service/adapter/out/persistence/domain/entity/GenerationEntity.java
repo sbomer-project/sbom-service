@@ -65,10 +65,6 @@ public class GenerationEntity extends PanacheEntityBase {
     @Enumerated(EnumType.STRING)
     private GenerationStatus status;
 
-    private Integer result;
-
-    private String reason;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "request_db_id")
     private RequestEntity request;

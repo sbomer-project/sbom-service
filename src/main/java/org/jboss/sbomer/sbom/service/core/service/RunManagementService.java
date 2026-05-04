@@ -11,10 +11,12 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ChildEnhancementsStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
+import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 import org.jboss.sbomer.sbom.service.core.domain.exception.EntityNotFoundException;
 import org.jboss.sbomer.sbom.service.core.domain.exception.InvalidRetryStateException;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
@@ -55,7 +57,15 @@ public class RunManagementService implements RunManagement {
 
         RunState finalState = (result == GenerationResult.SUCCESS) ? RunState.SUCCEEDED : RunState.FAILED;
         run.setState(finalState);
-        run.setReason(result);
+        
+        // Map to canonical error code and preserve upstream reason
+        if (finalState == RunState.FAILED) {
+            ErrorResult canonicalError = ErrorMapper.fromGenerationResult(result);
+            run.setErrorResult(canonicalError);
+            run.setUpstreamReason(result.name()); // Preserve legacy code as upstream diagnostic
+            log.debug("Mapped generation failure: legacyCode={} -> canonicalError={}", result, canonicalError);
+        }
+        
         run.setMessage(message);
         run.setCompletionTime(Instant.now());
         repository.updateGenerationRun(run);
@@ -98,7 +108,15 @@ public class RunManagementService implements RunManagement {
 
         RunState finalState = (result == EnhancementResult.SUCCESS) ? RunState.SUCCEEDED : RunState.FAILED;
         run.setState(finalState);
-        run.setReason(result);
+        
+        // Map to canonical error code and preserve upstream reason
+        if (finalState == RunState.FAILED) {
+            ErrorResult canonicalError = ErrorMapper.fromEnhancementResult(result);
+            run.setErrorResult(canonicalError);
+            run.setUpstreamReason(result.name()); // Preserve legacy code as upstream diagnostic
+            log.debug("Mapped enhancement failure: legacyCode={} -> canonicalError={}", result, canonicalError);
+        }
+        
         run.setMessage(message);
         run.setCompletionTime(Instant.now());
         repository.updateEnhancementRun(run);
@@ -164,7 +182,8 @@ public class RunManagementService implements RunManagement {
         newRun.setGenerationId(generationId);
         newRun.setAttemptNumber(nextAttempt);
         newRun.setState(RunState.PENDING);
-        newRun.setReason(null); // Will be set when run completes
+        newRun.setErrorResult(null); // Will be set when run completes with failure
+        newRun.setUpstreamReason(null);
         newRun.setMessage("Manual retry attempt " + nextAttempt);
         newRun.setStartTime(Instant.now());
         newRun.setCompletionTime(null);
@@ -224,7 +243,8 @@ public class RunManagementService implements RunManagement {
         newRun.setEnhancementId(enhancementId);
         newRun.setAttemptNumber(nextAttempt);
         newRun.setState(RunState.PENDING);
-        newRun.setReason(null); // Will be set when run completes
+        newRun.setErrorResult(null); // Will be set when run completes with failure
+        newRun.setUpstreamReason(null);
         newRun.setMessage("Manual retry attempt " + nextAttempt);
         newRun.setStartTime(Instant.now());
         newRun.setCompletionTime(null);

@@ -11,7 +11,9 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
+import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 import org.jboss.sbomer.sbom.service.core.port.spi.enhancement.EnhancementScheduler;
@@ -60,11 +62,11 @@ public class AutomaticRetryService {
      * 
      * Retry is triggered only if:
      * 1. Retry is globally enabled
-     * 2. The error type is configured as retryable
+     * 2. The error type is configured as retryable (based on canonical error code)
      * 3. The current attempt count is below the configured maximum
      * 
      * @param generationId the ID of the failed generation
-     * @param failureResult the failure reason/error code
+     * @param failureResult the failure reason/error code (legacy)
      * @return true if retry was triggered, false otherwise
      */
     public boolean tryRetryGeneration(String generationId, GenerationResult failureResult) {
@@ -73,10 +75,15 @@ public class AutomaticRetryService {
             return false;
         }
 
-        if (!config.isRetryableGeneration(failureResult)) {
+        // Map legacy result to canonical error code
+        ErrorResult canonicalError = ErrorMapper.fromGenerationResult(failureResult);
+        
+        // Use canonical error code retryability
+        if (!canonicalError.isRetryable()) {
             log.debug(
-                    "Error {} is not retryable, skipping retry for generation {}",
+                    "Error {} (canonical: {}) is not retryable, skipping retry for generation {}",
                     failureResult,
+                    canonicalError,
                     generationId);
             return false;
         }
@@ -98,11 +105,12 @@ public class AutomaticRetryService {
 
         // Trigger immediate retry
         log.info(
-                "Triggering immediate retry for generation {}: attempt {}/{}, error={}",
+                "Triggering immediate retry for generation {}: attempt {}/{}, legacyError={}, canonicalError={}",
                 generationId,
                 totalAttempts + 1,
                 maxAttempts,
-                failureResult);
+                failureResult,
+                canonicalError);
 
         try {
             // Create new run and update status to PENDING_RETRY
@@ -132,11 +140,11 @@ public class AutomaticRetryService {
      * 
      * Retry is triggered only if:
      * 1. Retry is globally enabled
-     * 2. The error type is configured as retryable
+     * 2. The error type is configured as retryable (based on canonical error code)
      * 3. The current attempt count is below the configured maximum
      * 
      * @param enhancementId the ID of the failed enhancement
-     * @param failureResult the failure reason/error code
+     * @param failureResult the failure reason/error code (legacy)
      * @return true if retry was triggered, false otherwise
      */
     public boolean tryRetryEnhancement(String enhancementId, EnhancementResult failureResult) {
@@ -145,10 +153,15 @@ public class AutomaticRetryService {
             return false;
         }
 
-        if (!config.isRetryableEnhancement(failureResult)) {
+        // Map legacy result to canonical error code
+        ErrorResult canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
+        
+        // Use canonical error code retryability
+        if (!canonicalError.isRetryable()) {
             log.debug(
-                    "Error {} is not retryable, skipping retry for enhancement {}",
+                    "Error {} (canonical: {}) is not retryable, skipping retry for enhancement {}",
                     failureResult,
+                    canonicalError,
                     enhancementId);
             return false;
         }
@@ -170,11 +183,12 @@ public class AutomaticRetryService {
 
         // Trigger immediate retry
         log.info(
-                "Triggering immediate retry for enhancement {}: attempt {}/{}, error={}",
+                "Triggering immediate retry for enhancement {}: attempt {}/{}, legacyError={}, canonicalError={}",
                 enhancementId,
                 totalAttempts + 1,
                 maxAttempts,
-                failureResult);
+                failureResult,
+                canonicalError);
 
         try {
             // Create new run and update status to PENDING_RETRY

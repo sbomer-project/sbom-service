@@ -61,10 +61,6 @@ public class EnhancementEntity extends PanacheEntityBase {
     @Enumerated(EnumType.STRING)
     private EnhancementStatus status;
 
-    private Integer result;
-
-    private String reason;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "request_db_id")
     private RequestEntity request;

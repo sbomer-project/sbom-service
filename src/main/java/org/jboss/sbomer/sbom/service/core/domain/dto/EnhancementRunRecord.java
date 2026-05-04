@@ -2,7 +2,7 @@ package org.jboss.sbomer.sbom.service.core.domain.dto;
 
 import java.time.Instant;
 
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
 
 import lombok.EqualsAndHashCode;
@@ -18,8 +18,20 @@ public class EnhancementRunRecord {
     private String enhancementId;
     private Integer attemptNumber;
     private RunState state;
-    private EnhancementResult reason;
+    
+    /**
+     * Canonical error result code.
+     * Null while running or on success, populated on failure.
+     */
+    private ErrorResult errorResult;
+    
     private String message;
+    
+    /**
+     * Raw upstream reason from external worker (e.g., "TaskRunFailed").
+     */
+    private String upstreamReason;
+    
     private Instant startTime;
     private Instant completionTime;
 }

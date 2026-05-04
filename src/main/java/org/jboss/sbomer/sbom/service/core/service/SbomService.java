@@ -15,10 +15,12 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
+import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
 import org.jboss.sbomer.sbom.service.core.port.api.enhancement.EnhancementStatusProcessor;
 import org.jboss.sbomer.sbom.service.core.port.api.generation.GenerationProcessor;
@@ -166,13 +168,21 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                 GenerationResult failureResult = GenerationResult.fromCode(generationUpdate.getData().getResultCode())
                         .orElse(GenerationResult.ERR_GENERAL);
                 String failureReason = generationUpdate.getData().getReason();
+                
+                // Map to canonical error code for logging and diagnostics
+                ErrorResult canonicalError = ErrorMapper.fromGenerationResult(failureResult);
+                String upstreamReason = failureReason != null ? failureReason : "Unknown";
+                
+                log.error("Generation failed: generationId={} result={} legacyCode={} upstreamReason={} retryable={}", 
+                          generationId, canonicalError, failureResult, upstreamReason, canonicalError.isRetryable());
+                
                 runManagement.completeGenerationRun(failedRunId, failureResult, failureReason);
                 
                 // Try automatic immediate retry
                 boolean retried = automaticRetryService.tryRetryGeneration(generationId, failureResult);
                 if (!retried) {
-                    log.info("Generation {} failed and will not be retried: error={}, reason={}", 
-                             generationId, failureResult, failureReason);
+                    log.info("Generation {} will not be retried: result={} legacyError={}", 
+                             generationId, canonicalError, failureResult);
                 }
                 break;
         }
@@ -229,13 +239,21 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                         .fromCode(enhancementUpdate.getData().getResultCode())
                         .orElse(EnhancementResult.ERR_GENERAL);
                 String failureReason = enhancementUpdate.getData().getReason();
+                
+                // Map to canonical error code for logging and diagnostics
+                ErrorResult canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
+                String upstreamReason = failureReason != null ? failureReason : "Unknown";
+                
+                log.error("Enhancement failed: enhancementId={} result={} legacyCode={} upstreamReason={} retryable={}", 
+                          enhancementId, canonicalError, failureResult, upstreamReason, canonicalError.isRetryable());
+                
                 runManagement.completeEnhancementRun(failedRunId, failureResult, failureReason);
                 
                 // Try automatic immediate retry
                 boolean retried = automaticRetryService.tryRetryEnhancement(enhancementId, failureResult);
                 if (!retried) {
-                    log.info("Enhancement {} failed and will not be retried: error={}, reason={}", 
-                             enhancementId, failureResult, failureReason);
+                    log.info("Enhancement {} will not be retried: result={} legacyError={}", 
+                             enhancementId, canonicalError, failureResult);
                 }
                 break;
         }

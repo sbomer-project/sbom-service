@@ -219,8 +219,6 @@ public class PanacheStatusRepository implements StatusRepository {
             entity.setUpdated(record.getUpdated());
             entity.setFinished(record.getFinished());
             entity.setStatus(record.getStatus());
-            entity.setResult(record.getResult());
-            entity.setReason(record.getReason());
             entity.setTargetType(record.getTargetType());
             entity.setTargetIdentifier(record.getTargetIdentifier());
             entity.setChildEnhancementsStatus(record.getChildEnhancementsStatus());
@@ -434,8 +432,6 @@ public class PanacheStatusRepository implements StatusRepository {
         enhancementEntity.setUpdated(enhancementRecord.getUpdated());
         enhancementEntity.setFinished(enhancementRecord.getFinished());
         enhancementEntity.setStatus(enhancementRecord.getStatus());
-        enhancementEntity.setResult(enhancementRecord.getResult());
-        enhancementEntity.setReason(enhancementRecord.getReason());
 
         if (enhancementRecord.getEnhancerOptions() != null) {
             if (enhancementEntity.getEnhancerOptions() == null) {
@@ -489,7 +485,8 @@ public class PanacheStatusRepository implements StatusRepository {
         generationRunRepository.find("runId", record.getId()).firstResultOptional().ifPresent(entity -> {
             entity.setAttemptNumber(record.getAttemptNumber());
             entity.setState(record.getState());
-            entity.setReason(record.getReason());
+            entity.setErrorResult(record.getErrorResult());
+            entity.setUpstreamReason(record.getUpstreamReason());
             entity.setMessage(record.getMessage());
             entity.setStartTime(record.getStartTime());
             entity.setCompletionTime(record.getCompletionTime());
@@ -538,7 +535,8 @@ public class PanacheStatusRepository implements StatusRepository {
         enhancementRunRepository.find("runId", record.getId()).firstResultOptional().ifPresent(entity -> {
             entity.setAttemptNumber(record.getAttemptNumber());
             entity.setState(record.getState());
-            entity.setReason(record.getReason());
+            entity.setErrorResult(record.getErrorResult());
+            entity.setUpstreamReason(record.getUpstreamReason());
             entity.setMessage(record.getMessage());
             entity.setStartTime(record.getStartTime());
             entity.setCompletionTime(record.getCompletionTime());
