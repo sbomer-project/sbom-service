@@ -20,7 +20,6 @@ import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
-import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
 import org.jboss.sbomer.sbom.service.core.port.api.enhancement.EnhancementStatusProcessor;
 import org.jboss.sbomer.sbom.service.core.port.api.generation.GenerationProcessor;
@@ -31,6 +30,7 @@ import org.jboss.sbomer.sbom.service.core.port.spi.RequestsFinishedNotifier;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 import org.jboss.sbomer.sbom.service.core.port.spi.enhancement.EnhancementScheduler;
 import org.jboss.sbomer.sbom.service.core.port.spi.generation.GenerationScheduler;
+import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 import org.jboss.sbomer.sbom.service.core.utility.TsidUtility;
 
 import io.opentelemetry.instrumentation.annotations.WithSpan;

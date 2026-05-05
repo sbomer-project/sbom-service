@@ -1,73 +1,150 @@
 package org.jboss.sbomer.test.unit.sbom.service.adapter.in.rest;
 
-import static io.restassured.RestAssured.given;
-import static jakarta.ws.rs.core.Response.Status.CONFLICT;
-import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
+import static org.junit.jupiter.api.Assertions.*;
 
+import org.jboss.sbomer.sbom.service.adapter.in.rest.EntityNotFoundExceptionMapper;
+import org.jboss.sbomer.sbom.service.adapter.in.rest.GenericExceptionMapper;
+import org.jboss.sbomer.sbom.service.adapter.in.rest.InvalidRetryStateExceptionMapper;
+import org.jboss.sbomer.sbom.service.adapter.in.rest.dto.ErrorResponse;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorCategory;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.exception.EntityNotFoundException;
 import org.jboss.sbomer.sbom.service.core.domain.exception.InvalidRetryStateException;
-import org.jboss.sbomer.sbom.service.core.port.api.SbomAdministration;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.InjectMock;
-import io.quarkus.test.junit.QuarkusTest;
+import jakarta.ws.rs.core.Response;
 
-@QuarkusTest
+/**
+ * Unit tests for REST exception mappers.
+ * Tests verify that exceptions are properly mapped to ErrorResponse with canonical error codes.
+ */
 class ExceptionMapperTest {
-
-    @InjectMock
-    SbomAdministration sbomAdministration;
 
     @Test
     void testEntityNotFoundReturnsNotFound() {
+        // Given
+        EntityNotFoundExceptionMapper mapper = new EntityNotFoundExceptionMapper();
         String message = "Generation with ID gen-1 not found";
-        doThrow(new EntityNotFoundException(message))
-                .when(sbomAdministration).retryGeneration(anyString());
-        given()
-                .contentType("application/json")
-                .when().post("/api/v1/generations/gen-1/retry")
-                .then()
-                .statusCode(NOT_FOUND.getStatusCode())
-                .body("error", equalTo("Not Found"))
-                .body("message", equalTo(message))
-                .body("status", equalTo(404))
-                .body("timestamp", notNullValue());
+        EntityNotFoundException exception = new EntityNotFoundException(message);
+
+        // When
+        Response response = mapper.toResponse(exception);
+        ErrorResponse errorResponse = (ErrorResponse) response.getEntity();
+
+        // Then
+        assertEquals(404, response.getStatus());
+        assertEquals(ErrorResult.ENTITY_NOT_FOUND, errorResponse.result());
+        assertEquals(message, errorResponse.reason());
+        assertEquals(404, errorResponse.status());
+        assertEquals(ErrorCategory.VALIDATION, errorResponse.category());
+        assertNotNull(errorResponse.timestamp());
     }
 
     @Test
     void testInvalidRetryStateReturnsConflict() {
+        // Given
+        InvalidRetryStateExceptionMapper mapper = new InvalidRetryStateExceptionMapper();
         String message = "Cannot retry generation in status: GENERATING";
-        doThrow(new InvalidRetryStateException(message))
-                .when(sbomAdministration).retryGeneration(anyString());
-        given()
-                .contentType("application/json")
-                .when().post("/api/v1/generations/gen-1/retry")
-                .then()
-                .statusCode(CONFLICT.getStatusCode())
-                .body("error", equalTo("Conflict"))
-                .body("message", equalTo(message))
-                .body("status", equalTo(409))
-                .body("timestamp", notNullValue());
+        InvalidRetryStateException exception = new InvalidRetryStateException(message);
+
+        // When
+        Response response = mapper.toResponse(exception);
+        ErrorResponse errorResponse = (ErrorResponse) response.getEntity();
+
+        // Then
+        assertEquals(409, response.getStatus());
+        assertEquals(ErrorResult.INVALID_STATE_TRANSITION, errorResponse.result());
+        assertEquals(message, errorResponse.reason());
+        assertEquals(409, errorResponse.status());
+        assertEquals(ErrorCategory.VALIDATION, errorResponse.category());
+        assertNotNull(errorResponse.timestamp());
     }
 
     @Test
     void testUnhandledExceptionReturnsInternalServerError() {
+        // Given
+        GenericExceptionMapper mapper = new GenericExceptionMapper();
         String message = "Unexpected error";
-        doThrow(new RuntimeException(message))
-                .when(sbomAdministration).retryGeneration(anyString());
-        given()
-                .contentType("application/json")
-                .when().post("/api/v1/generations/gen-1/retry")
-                .then()
-                .statusCode(INTERNAL_SERVER_ERROR.getStatusCode())
-                .body("error", equalTo("Internal Server Error"))
-                .body("message", equalTo(message))
-                .body("status", equalTo(500))
-                .body("timestamp", notNullValue());
+        RuntimeException exception = new RuntimeException(message);
+
+        // When
+        Response response = mapper.toResponse(exception);
+        ErrorResponse errorResponse = (ErrorResponse) response.getEntity();
+
+        // Then
+        assertEquals(500, response.getStatus());
+        assertEquals(ErrorResult.UNEXPECTED_ERROR, errorResponse.result());
+        assertEquals(message, errorResponse.reason());
+        assertEquals(500, errorResponse.status());
+        assertEquals(ErrorCategory.INTERNAL, errorResponse.category());
+        assertNotNull(errorResponse.timestamp());
+    }
+
+    @Test
+    void testGenericExceptionMapperSanitizesLongMessages() {
+        // Given
+        GenericExceptionMapper mapper = new GenericExceptionMapper();
+        String longMessage = "a".repeat(300); // Message longer than 200 chars
+        RuntimeException exception = new RuntimeException(longMessage);
+
+        // When
+        Response response = mapper.toResponse(exception);
+        ErrorResponse errorResponse = (ErrorResponse) response.getEntity();
+
+        // Then
+        assertEquals(500, response.getStatus());
+        assertEquals(ErrorResult.UNEXPECTED_ERROR, errorResponse.result());
+        // Should use generic message instead of the long one
+        assertEquals("An unexpected error occurred while processing your request", errorResponse.reason());
+    }
+
+    @Test
+    void testGenericExceptionMapperSanitizesMultilineMessages() {
+        // Given
+        GenericExceptionMapper mapper = new GenericExceptionMapper();
+        String multilineMessage = "Error\nwith\nstack\ntrace";
+        RuntimeException exception = new RuntimeException(multilineMessage);
+
+        // When
+        Response response = mapper.toResponse(exception);
+        ErrorResponse errorResponse = (ErrorResponse) response.getEntity();
+
+        // Then
+        assertEquals(500, response.getStatus());
+        assertEquals(ErrorResult.UNEXPECTED_ERROR, errorResponse.result());
+        // Should use generic message instead of multiline one
+        assertEquals("An unexpected error occurred while processing your request", errorResponse.reason());
+    }
+
+    @Test
+    void testGenericExceptionMapperHandlesNullMessage() {
+        // Given
+        GenericExceptionMapper mapper = new GenericExceptionMapper();
+        RuntimeException exception = new RuntimeException((String) null);
+
+        // When
+        Response response = mapper.toResponse(exception);
+        ErrorResponse errorResponse = (ErrorResponse) response.getEntity();
+
+        // Then
+        assertEquals(500, response.getStatus());
+        assertEquals(ErrorResult.UNEXPECTED_ERROR, errorResponse.result());
+        assertEquals("An unexpected error occurred while processing your request", errorResponse.reason());
+    }
+
+    @Test
+    void testGenericExceptionMapperHandlesEmptyMessage() {
+        // Given
+        GenericExceptionMapper mapper = new GenericExceptionMapper();
+        RuntimeException exception = new RuntimeException("");
+
+        // When
+        Response response = mapper.toResponse(exception);
+        ErrorResponse errorResponse = (ErrorResponse) response.getEntity();
+
+        // Then
+        assertEquals(500, response.getStatus());
+        assertEquals(ErrorResult.UNEXPECTED_ERROR, errorResponse.result());
+        assertEquals("An unexpected error occurred while processing your request", errorResponse.reason());
     }
 }

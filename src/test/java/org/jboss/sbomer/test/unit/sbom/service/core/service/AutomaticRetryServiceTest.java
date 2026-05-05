@@ -125,7 +125,7 @@ class AutomaticRetryServiceTest {
     @Test
     void testRetryGeneration_WhenErrorNotRetryable_ShouldNotRetry() {
         // Given
-        when(config.isRetryableGeneration(GenerationResult.ERR_CONFIG_INVALID)).thenReturn(false);
+        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
 
         // When
         boolean result = automaticRetryService.tryRetryGeneration(
@@ -135,7 +135,7 @@ class AutomaticRetryServiceTest {
         // Then
         assertFalse(result, "Should not retry non-retryable error");
         verify(config).isRetryEnabled();
-        verify(config).isRetryableGeneration(GenerationResult.ERR_CONFIG_INVALID);
+        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
         verify(statusRepository, never()).findGenerationRunsByGenerationId(any());
         verify(runManagement, never()).retryGeneration(any());
     }
@@ -143,7 +143,7 @@ class AutomaticRetryServiceTest {
     @Test
     void testRetryGeneration_WhenMaxAttemptsReached_ShouldNotRetry() {
         // Given
-        when(config.isRetryableGeneration(GenerationResult.ERR_SYSTEM)).thenReturn(true);
+        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
         when(config.getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM)).thenReturn(3);
 
         // Mock 3 existing runs (max attempts reached)
@@ -159,7 +159,7 @@ class AutomaticRetryServiceTest {
         // Then
         assertFalse(result, "Should not retry when max attempts reached");
         verify(config).isRetryEnabled();
-        verify(config).isRetryableGeneration(GenerationResult.ERR_SYSTEM);
+        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
         verify(statusRepository).findGenerationRunsByGenerationId(TEST_GENERATION_ID);
         verify(config).getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM);
         verify(runManagement, never()).retryGeneration(any());
@@ -168,7 +168,7 @@ class AutomaticRetryServiceTest {
     @Test
     void testRetryGeneration_WhenBelowMaxAttempts_ShouldRetry() {
         // Given
-        when(config.isRetryableGeneration(GenerationResult.ERR_SYSTEM)).thenReturn(true);
+        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
         when(config.getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM)).thenReturn(5);
 
         // Mock 2 existing runs (below max attempts)
@@ -184,7 +184,7 @@ class AutomaticRetryServiceTest {
         // Then
         assertTrue(result, "Should retry when below max attempts");
         verify(config).isRetryEnabled();
-        verify(config).isRetryableGeneration(GenerationResult.ERR_SYSTEM);
+        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
         verify(statusRepository).findGenerationRunsByGenerationId(TEST_GENERATION_ID);
         verify(config).getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM);
         verify(runManagement).retryGeneration(TEST_GENERATION_ID);
@@ -197,7 +197,7 @@ class AutomaticRetryServiceTest {
     @Test
     void testRetryGeneration_WhenFirstAttemptFails_ShouldRetry() {
         // Given
-        when(config.isRetryableGeneration(GenerationResult.ERR_OOM)).thenReturn(true);
+        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
         when(config.getMaxAttemptsForGeneration(GenerationResult.ERR_OOM)).thenReturn(3);
 
         // Mock 1 existing run (first attempt failed)
@@ -222,7 +222,7 @@ class AutomaticRetryServiceTest {
     @Test
     void testRetryGeneration_WhenRetryThrowsException_ShouldReturnFalse() {
         // Given
-        when(config.isRetryableGeneration(GenerationResult.ERR_SYSTEM)).thenReturn(true);
+        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
         when(config.getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM)).thenReturn(5);
 
         List<GenerationRunRecord> existingRuns = createGenerationRuns(1);
@@ -265,7 +265,7 @@ class AutomaticRetryServiceTest {
     @Test
     void testRetryEnhancement_WhenErrorNotRetryable_ShouldNotRetry() {
         // Given
-        when(config.isRetryableEnhancement(EnhancementResult.ERR_CONFIG_INVALID)).thenReturn(false);
+        // Note: isRetryableEnhancement is no longer called - retryability is determined by ErrorResult enum
 
         // When
         boolean result = automaticRetryService.tryRetryEnhancement(
@@ -275,7 +275,7 @@ class AutomaticRetryServiceTest {
         // Then
         assertFalse(result, "Should not retry non-retryable error");
         verify(config).isRetryEnabled();
-        verify(config).isRetryableEnhancement(EnhancementResult.ERR_CONFIG_INVALID);
+        // Note: isRetryableEnhancement is no longer called - retryability is determined by ErrorResult enum
         verify(statusRepository, never()).findEnhancementRunsByEnhancementId(any());
         verify(runManagement, never()).retryEnhancement(any());
     }
@@ -283,7 +283,7 @@ class AutomaticRetryServiceTest {
     @Test
     void testRetryEnhancement_WhenMaxAttemptsReached_ShouldNotRetry() {
         // Given
-        when(config.isRetryableEnhancement(EnhancementResult.ERR_ENHANCEMENT)).thenReturn(true);
+        // Note: isRetryableEnhancement is no longer called - retryability is determined by ErrorResult enum
         when(config.getMaxAttemptsForEnhancement(EnhancementResult.ERR_ENHANCEMENT)).thenReturn(3);
 
         // Mock 3 existing runs (max attempts reached)
@@ -299,7 +299,7 @@ class AutomaticRetryServiceTest {
         // Then
         assertFalse(result, "Should not retry when max attempts reached");
         verify(config).isRetryEnabled();
-        verify(config).isRetryableEnhancement(EnhancementResult.ERR_ENHANCEMENT);
+        // Note: isRetryableEnhancement is no longer called - retryability is determined by ErrorResult enum
         verify(statusRepository).findEnhancementRunsByEnhancementId(TEST_ENHANCEMENT_ID);
         verify(config).getMaxAttemptsForEnhancement(EnhancementResult.ERR_ENHANCEMENT);
         verify(runManagement, never()).retryEnhancement(any());
@@ -308,7 +308,7 @@ class AutomaticRetryServiceTest {
     @Test
     void testRetryEnhancement_WhenBelowMaxAttempts_ShouldRetry() {
         // Given
-        when(config.isRetryableEnhancement(EnhancementResult.ERR_GENERAL)).thenReturn(true);
+        // Note: isRetryableEnhancement is no longer called - retryability is determined by ErrorResult enum
         when(config.getMaxAttemptsForEnhancement(EnhancementResult.ERR_GENERAL)).thenReturn(2);
 
         // Mock 1 existing run (below max attempts)
@@ -324,7 +324,7 @@ class AutomaticRetryServiceTest {
         // Then
         assertTrue(result, "Should retry when below max attempts");
         verify(config).isRetryEnabled();
-        verify(config).isRetryableEnhancement(EnhancementResult.ERR_GENERAL);
+        // Note: isRetryableEnhancement is no longer called - retryability is determined by ErrorResult enum
         verify(statusRepository).findEnhancementRunsByEnhancementId(TEST_ENHANCEMENT_ID);
         verify(config).getMaxAttemptsForEnhancement(EnhancementResult.ERR_GENERAL);
         verify(runManagement).retryEnhancement(TEST_ENHANCEMENT_ID);
@@ -337,7 +337,7 @@ class AutomaticRetryServiceTest {
     @Test
     void testRetryEnhancement_WhenRetryThrowsException_ShouldReturnFalse() {
         // Given
-        when(config.isRetryableEnhancement(EnhancementResult.ERR_ENHANCEMENT)).thenReturn(true);
+        // Note: isRetryableEnhancement is no longer called - retryability is determined by ErrorResult enum
         when(config.getMaxAttemptsForEnhancement(EnhancementResult.ERR_ENHANCEMENT)).thenReturn(3);
 
         List<EnhancementRunRecord> existingRuns = createEnhancementRuns(1);

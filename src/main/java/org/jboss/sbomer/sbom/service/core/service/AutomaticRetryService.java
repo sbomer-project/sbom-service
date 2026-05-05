@@ -13,11 +13,11 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
-import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 import org.jboss.sbomer.sbom.service.core.port.spi.enhancement.EnhancementScheduler;
 import org.jboss.sbomer.sbom.service.core.port.spi.generation.GenerationScheduler;
+import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -25,13 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service responsible for automatic retry logic for failed generations and enhancements.
- * 
+ *
  * This service evaluates failed operations against configured retry policies and triggers
  * immediate retries when appropriate. Retry decisions are based on:
  * - Global retry enablement flag
  * - Error type retryability configuration
  * - Current attempt count vs. maximum allowed attempts
- * 
+ *
  * Retries are transparent to external generators/enhancers - they receive normal
  * generation/enhancement requests with no indication that this is a retry attempt.
  */
@@ -59,12 +59,12 @@ public class AutomaticRetryService {
 
     /**
      * Evaluates a failed generation and triggers an immediate retry if applicable.
-     * 
+     *
      * Retry is triggered only if:
      * 1. Retry is globally enabled
      * 2. The error type is configured as retryable (based on canonical error code)
      * 3. The current attempt count is below the configured maximum
-     * 
+     *
      * @param generationId the ID of the failed generation
      * @param failureResult the failure reason/error code (legacy)
      * @return true if retry was triggered, false otherwise
@@ -77,7 +77,7 @@ public class AutomaticRetryService {
 
         // Map legacy result to canonical error code
         ErrorResult canonicalError = ErrorMapper.fromGenerationResult(failureResult);
-        
+
         // Use canonical error code retryability
         if (!canonicalError.isRetryable()) {
             log.debug(
@@ -137,12 +137,12 @@ public class AutomaticRetryService {
 
     /**
      * Evaluates a failed enhancement and triggers an immediate retry if applicable.
-     * 
+     *
      * Retry is triggered only if:
      * 1. Retry is globally enabled
      * 2. The error type is configured as retryable (based on canonical error code)
      * 3. The current attempt count is below the configured maximum
-     * 
+     *
      * @param enhancementId the ID of the failed enhancement
      * @param failureResult the failure reason/error code (legacy)
      * @return true if retry was triggered, false otherwise
@@ -155,7 +155,7 @@ public class AutomaticRetryService {
 
         // Map legacy result to canonical error code
         ErrorResult canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
-        
+
         // Use canonical error code retryability
         if (!canonicalError.isRetryable()) {
             log.debug(
@@ -231,4 +231,3 @@ public class AutomaticRetryService {
     }
 }
 
-// Made with Bob
