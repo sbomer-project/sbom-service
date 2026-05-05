@@ -21,7 +21,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 
     @Override
     public Response toResponse(Exception exception) {
-        ErrorResult result = ErrorMapper.fromException(exception);
+        ErrorResult result = ErrorMapper.fromException(exception).orElse(ErrorResult.UNEXPECTED_ERROR);
         
         log.error("Unhandled exception in REST endpoint: result={} exception={} message={}", 
                   result, exception.getClass().getSimpleName(), exception.getMessage(), exception);

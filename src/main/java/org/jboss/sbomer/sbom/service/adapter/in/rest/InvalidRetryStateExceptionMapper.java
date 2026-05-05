@@ -22,7 +22,7 @@ public class InvalidRetryStateExceptionMapper implements ExceptionMapper<Invalid
 
     @Override
     public Response toResponse(InvalidRetryStateException exception) {
-        ErrorResult result = ErrorMapper.fromException(exception);
+        ErrorResult result = ErrorMapper.fromException(exception).orElse(ErrorResult.UNEXPECTED_ERROR);
         
         log.warn("Invalid retry state: result={} reason={}", result, exception.getMessage());
         

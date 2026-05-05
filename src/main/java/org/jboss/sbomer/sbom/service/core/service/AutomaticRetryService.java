@@ -33,8 +33,23 @@ import lombok.extern.slf4j.Slf4j;
  * - Configured maximum retry attempts per error type
  * - Current attempt count
  *
- * Retry decisions are made using canonical ErrorResult codes, which provide stable,
+ * Retry decisions are made using canonical {@link ErrorResult} codes, which provide stable,
  * service-owned error classification independent of external worker implementations.
+ *
+ * Retry flow:
+ * <pre>
+ * failure event received
+ *   -> map legacy result to canonical ErrorResult
+ *   -> verify retry is globally enabled
+ *   -> verify canonical error is present and retryable
+ *   -> count existing run attempts
+ *   -> compare attempts against RetryPolicyConfig
+ *   -> create a new run and mark entity PENDING_RETRY
+ *   -> schedule a new generation/enhancement event
+ * </pre>
+ *
+ * The retry is transparent to external workers. They receive a normal scheduling event and
+ * do not need special retry-aware behavior.
  */
 @ApplicationScoped
 @Slf4j
@@ -63,8 +78,12 @@ public class AutomaticRetryService {
      *
      * Retry is triggered only if:
      * 1. Retry is globally enabled
-     * 2. The canonical error code is retryable (ErrorResult.isRetryable())
+     * 2. The canonical error code is retryable ({@link ErrorResult#isRetryable()})
      * 3. Maximum retry attempts have not been exceeded
+     *
+     * When eligible, the method creates a new generation run through {@link RunManagement},
+     * reloads the generation aggregate from {@link StatusRepository}, reconstructs the
+     * original scheduling payload, and republishes a {@link GenerationCreated} event.
      *
      * @param generationId the ID of the failed generation
      * @param failureResult the legacy generation failure result (mapped to canonical error)
@@ -142,8 +161,13 @@ public class AutomaticRetryService {
      *
      * Retry is triggered only if:
      * 1. Retry is globally enabled
-     * 2. The canonical error code is retryable (ErrorResult.isRetryable())
+     * 2. The canonical error code is retryable ({@link ErrorResult#isRetryable()})
      * 3. Maximum retry attempts have not been exceeded
+     *
+     * When eligible, the method creates a new enhancement run through {@link RunManagement},
+     * reloads the enhancement and its parent generation from {@link StatusRepository},
+     * restores the previous-enhancement chain context, and republishes an
+     * {@link EnhancementCreated} event.
      *
      * @param enhancementId the ID of the failed enhancement
      * @param failureResult the legacy enhancement failure result (mapped to canonical error)
@@ -223,8 +247,11 @@ public class AutomaticRetryService {
     }
 
     /**
-     * Helper to find the enhancement that ran immediately before the target index.
-     * Returns null if target is the first enhancement (index 0).
+     * Finds the enhancement that precedes the target enhancement in the execution chain.
+     *
+     * This preserves sequential enhancement context when rebuilding a retry event.
+     * Returns {@code null} when the target enhancement is the first item in the chain
+     * (index {@code 0}).
      */
     private EnhancementRecord findPreviousEnhancement(GenerationRecord parent, int targetIndex) {
         if (targetIndex == 0) {

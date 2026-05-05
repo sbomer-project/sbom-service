@@ -60,10 +60,10 @@ public class RunManagementService implements RunManagement {
         
         // Map to canonical error code and preserve upstream reason
         if (finalState == RunState.FAILED) {
-            Optional<ErrorResult> canonicalError = ErrorMapper.fromGenerationResult(result);
-            run.setErrorResult(canonicalError.orElse(null));
+            ErrorResult canonicalError = ErrorMapper.fromGenerationResult(result).orElse(ErrorResult.GENERATOR_EXECUTION_FAILED);
+            run.setErrorResult(canonicalError);
             run.setUpstreamReason(result.name()); // Preserve legacy code as upstream diagnostic
-            log.debug("Mapped generation failure: legacyCode={} -> canonicalError={}", result, canonicalError.orElse(null));
+            log.debug("Mapped generation failure: legacyCode={} -> canonicalError={}", result, canonicalError);
         }
         
         run.setMessage(message);
@@ -111,10 +111,10 @@ public class RunManagementService implements RunManagement {
         
         // Map to canonical error code and preserve upstream reason
         if (finalState == RunState.FAILED) {
-            Optional<ErrorResult> canonicalError = ErrorMapper.fromEnhancementResult(result);
-            run.setErrorResult(canonicalError.orElse(null));
+            ErrorResult canonicalError = ErrorMapper.fromEnhancementResult(result).orElse(ErrorResult.ENHANCER_EXECUTION_FAILED);
+            run.setErrorResult(canonicalError);
             run.setUpstreamReason(result.name()); // Preserve legacy code as upstream diagnostic
-            log.debug("Mapped enhancement failure: legacyCode={} -> canonicalError={}", result, canonicalError.orElse(null));
+            log.debug("Mapped enhancement failure: legacyCode={} -> canonicalError={}", result, canonicalError);
         }
         
         run.setMessage(message);

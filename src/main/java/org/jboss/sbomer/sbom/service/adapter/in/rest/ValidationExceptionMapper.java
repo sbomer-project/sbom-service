@@ -22,7 +22,7 @@ public class ValidationExceptionMapper implements ExceptionMapper<ValidationExce
 
     @Override
     public Response toResponse(ValidationException exception) {
-        ErrorResult result = ErrorMapper.fromException(exception);
+        ErrorResult result = ErrorMapper.fromException(exception).orElse(ErrorResult.UNEXPECTED_ERROR);
         
         log.warn("Validation error: result={} reason={}", result, exception.getMessage());
         

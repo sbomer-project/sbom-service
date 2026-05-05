@@ -33,7 +33,7 @@ public class FailureUtility {
      * @return A populated FailureSpec with canonical error code
      */
     public static FailureSpec buildFailureSpecFromException(Exception exception) {
-        ErrorResult errorResult = ErrorMapper.fromException(exception);
+        ErrorResult errorResult = ErrorMapper.fromException(exception).orElse(ErrorResult.UNEXPECTED_ERROR);
         
         FailureSpec failure = new FailureSpec();
         
@@ -92,7 +92,7 @@ public class FailureUtility {
             String generationId,
             String runId) {
         
-        ErrorResult errorResult = ErrorMapper.fromGenerationResult(generationResult);
+        ErrorResult errorResult = ErrorMapper.fromGenerationResult(generationResult).orElse(ErrorResult.GENERATOR_EXECUTION_FAILED);
         
         FailureSpec failure = new FailureSpec();
         
@@ -157,7 +157,7 @@ public class FailureUtility {
             String enhancementId,
             String runId) {
         
-        ErrorResult errorResult = ErrorMapper.fromEnhancementResult(enhancementResult);
+        ErrorResult errorResult = ErrorMapper.fromEnhancementResult(enhancementResult).orElse(ErrorResult.ENHANCER_EXECUTION_FAILED);
         
         FailureSpec failure = new FailureSpec();
         

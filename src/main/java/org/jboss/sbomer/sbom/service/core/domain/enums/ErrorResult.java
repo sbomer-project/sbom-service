@@ -4,13 +4,26 @@ import lombok.Getter;
 
 /**
  * Canonical service-owned error result codes.
- * 
+ *
  * These codes represent stable, high-level error classifications that are independent
- * of external tool implementations (e.g., Tekton tasks). Each code includes metadata
- * about category, retryability, ownership, and severity.
- * 
- * External reasons (like "TaskRunFailed") should be captured as diagnostic details,
- * not used as primary error codes.
+ * of external tool implementations (for example generator and enhancer workers). Each
+ * code includes metadata about category, retryability, ownership, and severity so the
+ * service can make consistent decisions for retries, persistence, REST responses, and
+ * Kafka notifications.
+ *
+ * Legacy worker result codes such as {@code ERR_OOM}, {@code ERR_SYSTEM},
+ * {@code ERR_GENERATION}, and {@code ERR_ENHANCEMENT} are translated into this enum by
+ * {@code ErrorMapper}. External reasons such as {@code TaskRunFailed} should be stored
+ * as diagnostic details, not used as primary error identities.
+ *
+ * Example mappings:
+ * <ul>
+ *   <li>{@code ERR_OOM -> EXTERNAL_RESOURCE_EXHAUSTED}</li>
+ *   <li>{@code ERR_SYSTEM -> EXTERNAL_SYSTEM_ERROR}</li>
+ *   <li>{@code ERR_INDEX_INVALID -> INVALID_TARGET}</li>
+ *   <li>{@code ERR_GENERATION -> GENERATOR_EXECUTION_FAILED}</li>
+ *   <li>{@code ERR_ENHANCEMENT -> ENHANCER_EXECUTION_FAILED}</li>
+ * </ul>
  */
 @Getter
 public enum ErrorResult {
@@ -19,6 +32,8 @@ public enum ErrorResult {
     
     /**
      * Generic invalid request error.
+     *
+     * Example: REST payload validation fails before workflow orchestration starts.
      */
     INVALID_REQUEST(
         ErrorCategory.VALIDATION,
@@ -29,6 +44,8 @@ public enum ErrorResult {
     
     /**
      * Invalid target specification (e.g., malformed image reference, invalid build ID).
+     *
+     * Example: mapped from {@code ERR_INDEX_INVALID} when an external worker reports an invalid target.
      */
     INVALID_TARGET(
         ErrorCategory.VALIDATION,
@@ -195,6 +212,8 @@ public enum ErrorResult {
     
     /**
      * Generator execution failed.
+     *
+     * Example: mapped from {@code ERR_GENERATION}, {@code ERR_POST}, {@code ERR_MULTI}, or generic worker failures.
      */
     GENERATOR_EXECUTION_FAILED(
         ErrorCategory.EXTERNAL_EXECUTION,
@@ -205,6 +224,8 @@ public enum ErrorResult {
     
     /**
      * Enhancer execution failed.
+     *
+     * Example: mapped from {@code ERR_ENHANCEMENT} or a generic enhancement worker failure.
      */
     ENHANCER_EXECUTION_FAILED(
         ErrorCategory.EXTERNAL_EXECUTION,
@@ -215,6 +236,8 @@ public enum ErrorResult {
     
     /**
      * External worker timed out.
+     *
+     * Example: use when a generator or enhancer exceeds its execution window or callback deadline.
      */
     EXTERNAL_TIMEOUT(
         ErrorCategory.EXTERNAL_EXECUTION,
@@ -225,6 +248,8 @@ public enum ErrorResult {
     
     /**
      * External worker ran out of resources (OOM, disk space, etc).
+     *
+     * Example: mapped from {@code ERR_OOM} when a worker exhausts memory or ephemeral storage.
      */
     EXTERNAL_RESOURCE_EXHAUSTED(
         ErrorCategory.EXTERNAL_EXECUTION,
@@ -235,6 +260,8 @@ public enum ErrorResult {
     
     /**
      * External system error (infrastructure, platform issues).
+     *
+     * Example: mapped from {@code ERR_SYSTEM} when the worker platform or underlying runtime fails.
      */
     EXTERNAL_SYSTEM_ERROR(
         ErrorCategory.EXTERNAL_EXECUTION,
@@ -245,6 +272,8 @@ public enum ErrorResult {
     
     /**
      * External worker received bad configuration.
+     *
+     * Example: mapped from {@code ERR_CONFIG_INVALID} or {@code ERR_CONFIG_MISSING}.
      */
     EXTERNAL_BAD_CONFIGURATION(
         ErrorCategory.EXTERNAL_EXECUTION,
@@ -257,6 +286,8 @@ public enum ErrorResult {
     
     /**
      * Database operation failed.
+     *
+     * Example: persistence of request, generation, enhancement, or run state fails due to a transient database issue.
      */
     DATABASE_ERROR(
         ErrorCategory.INTERNAL,
@@ -287,6 +318,8 @@ public enum ErrorResult {
     
     /**
      * Unexpected error (catch-all for unknown failures).
+     *
+     * Example: an exception escapes normal classification and is mapped as a defensive fallback.
      */
     UNEXPECTED_ERROR(
         ErrorCategory.INTERNAL,

@@ -13,21 +13,28 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Configuration for automatic retry policies using canonical error codes.
- * 
- * This class manages retry behavior for failed operations based on canonical ErrorResult codes.
- * Configuration is loaded from application.properties using the following format:
- * 
+ *
+ * This class manages retry behavior for failed operations based on canonical
+ * {@link ErrorResult} values instead of legacy worker-specific result codes.
+ * The canonical configuration is the long-term replacement for the older
+ * generation/enhancement-specific retry configuration because it keeps retry
+ * policy aligned with the service-owned error taxonomy used by {@code ErrorMapper}
+ * and {@code AutomaticRetryService}.
+ *
+ * Configuration is loaded from {@code application.properties} using keys in the form:
+ *
  * <pre>
  * # Global retry toggle
  * sbomer.retry.enabled=true
- * 
+ *
  * # Canonical error code retry configuration
  * sbomer.retry.error.external-resource-exhausted.max-attempts=3
  * sbomer.retry.error.external-system-error.max-attempts=5
  * sbomer.retry.error.generator-execution-failed.max-attempts=3
  * </pre>
- * 
- * Error codes with max-attempts=0 or not configured will not be retried.
+ *
+ * Error codes with {@code max-attempts=0}, or codes with no explicit configuration,
+ * are treated as non-retryable by policy.
  */
 @ApplicationScoped
 @Slf4j
@@ -40,8 +47,13 @@ public class RetryPolicyConfig {
 
     /**
      * Loads retry configuration from application.properties on startup.
-     * 
-     * Default configuration for retryable errors (infrastructure and transient failures):
+     *
+     * The configuration is split into retryable transient/platform failures and
+     * explicitly non-retryable validation or permanent failures. This keeps policy
+     * close to the canonical error model and makes retry behavior auditable from
+     * configuration alone.
+     *
+     * Default configuration for retryable errors:
      * - EXTERNAL_RESOURCE_EXHAUSTED: 3 attempts
      * - EXTERNAL_SYSTEM_ERROR: 5 attempts
      * - EXTERNAL_TIMEOUT: 3 attempts
@@ -54,8 +66,9 @@ public class RetryPolicyConfig {
      * - ENHANCEMENT_SCHEDULING_ERROR: 3 attempts
      * - RETRY_EXECUTION_ERROR: 2 attempts
      * - TRANSACTION_ERROR: 3 attempts
-     * 
-     * Non-retryable errors (configuration, validation, and permanent failures) default to 0 attempts.
+     *
+     * Non-retryable errors (configuration, validation, and permanent failures)
+     * default to 0 attempts unless explicitly overridden.
      */
     @PostConstruct
     void loadConfiguration() {
@@ -167,7 +180,11 @@ public class RetryPolicyConfig {
 
     /**
      * Gets the maximum number of retry attempts configured for a canonical error code.
-     * 
+     *
+     * This is the single lookup used by retry orchestration after legacy worker results
+     * have been normalized to {@link ErrorResult}. Returning {@code 0} means the error
+     * should not be retried automatically under the current policy.
+     *
      * @param error the canonical error result
      * @return maximum number of attempts (0 means no retry)
      */
