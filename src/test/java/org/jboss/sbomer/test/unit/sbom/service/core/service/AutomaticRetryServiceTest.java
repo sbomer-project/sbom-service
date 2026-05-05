@@ -17,6 +17,7 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
@@ -100,6 +101,15 @@ class AutomaticRetryServiceTest {
         lenient().when(statusRepository.findGenerationById("test-generation-123")).thenReturn(mockGenerationRecord);
         lenient().when(sbomMapper.toEnhancementCreatedEvent(any(EnhancementRecord.class), any(), any(GenerationRecord.class)))
                 .thenReturn(mockEnhancementEvent);
+        
+        // Set up default canonical error code max attempts (lenient)
+        lenient().when(config.getMaxAttemptsForError(ErrorResult.EXTERNAL_SYSTEM_ERROR)).thenReturn(5);
+        lenient().when(config.getMaxAttemptsForError(ErrorResult.GENERATOR_EXECUTION_FAILED)).thenReturn(3);
+        lenient().when(config.getMaxAttemptsForError(ErrorResult.ENHANCER_EXECUTION_FAILED)).thenReturn(3);
+        lenient().when(config.getMaxAttemptsForError(ErrorResult.INVALID_TARGET)).thenReturn(0);
+        lenient().when(config.getMaxAttemptsForError(ErrorResult.CONFIG_INVALID)).thenReturn(0);
+        lenient().when(sbomMapper.toEnhancementCreatedEvent(any(EnhancementRecord.class), any(), any(GenerationRecord.class)))
+                .thenReturn(mockEnhancementEvent);
     }
 
     // ==================== GENERATION RETRY TESTS ====================
@@ -139,8 +149,8 @@ class AutomaticRetryServiceTest {
 
     @Test
     void testRetryGeneration_WhenMaxAttemptsReached_ShouldNotRetry() {
-        // Given
-        when(config.getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM)).thenReturn(3);
+        // Given - ERR_SYSTEM maps to EXTERNAL_SYSTEM_ERROR (retryable, max 3 attempts)
+        when(config.getMaxAttemptsForError(ErrorResult.EXTERNAL_SYSTEM_ERROR)).thenReturn(3);
 
         // Mock 3 existing runs (max attempts reached)
         List<GenerationRunRecord> existingRuns = createGenerationRuns(3);
@@ -156,14 +166,14 @@ class AutomaticRetryServiceTest {
         assertFalse(result, "Should not retry when max attempts reached");
         verify(config).isRetryEnabled();
         verify(statusRepository).findGenerationRunsByGenerationId(TEST_GENERATION_ID);
-        verify(config).getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM);
+        verify(config).getMaxAttemptsForError(ErrorResult.EXTERNAL_SYSTEM_ERROR);
         verify(runManagement, never()).retryGeneration(any());
     }
 
     @Test
     void testRetryGeneration_WhenBelowMaxAttempts_ShouldRetry() {
-        // Given
-        when(config.getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM)).thenReturn(5);
+        // Given - ERR_SYSTEM maps to EXTERNAL_SYSTEM_ERROR (retryable, max 5 attempts)
+        when(config.getMaxAttemptsForError(ErrorResult.EXTERNAL_SYSTEM_ERROR)).thenReturn(5);
 
         // Mock 2 existing runs (below max attempts)
         List<GenerationRunRecord> existingRuns = createGenerationRuns(2);
@@ -179,7 +189,7 @@ class AutomaticRetryServiceTest {
         assertTrue(result, "Should retry when below max attempts");
         verify(config).isRetryEnabled();
         verify(statusRepository).findGenerationRunsByGenerationId(TEST_GENERATION_ID);
-        verify(config).getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM);
+        verify(config).getMaxAttemptsForError(ErrorResult.EXTERNAL_SYSTEM_ERROR);
         verify(runManagement).retryGeneration(TEST_GENERATION_ID);
         verify(statusRepository).findGenerationById(TEST_GENERATION_ID);
         verify(sbomMapper).toGenerationRequestSpec(any(GenerationRecord.class));
@@ -189,9 +199,8 @@ class AutomaticRetryServiceTest {
 
     @Test
     void testRetryGeneration_WhenFirstAttemptFails_ShouldRetry() {
-        // Given
-        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
-        when(config.getMaxAttemptsForGeneration(GenerationResult.ERR_OOM)).thenReturn(3);
+        // Given - ERR_OOM maps to EXTERNAL_RESOURCE_EXHAUSTED (retryable, max 3 attempts)
+        when(config.getMaxAttemptsForError(ErrorResult.EXTERNAL_RESOURCE_EXHAUSTED)).thenReturn(3);
 
         // Mock 1 existing run (first attempt failed)
         List<GenerationRunRecord> existingRuns = createGenerationRuns(1);
@@ -214,9 +223,8 @@ class AutomaticRetryServiceTest {
 
     @Test
     void testRetryGeneration_WhenRetryThrowsException_ShouldReturnFalse() {
-        // Given
-        // Note: isRetryableGeneration is no longer called - retryability is determined by ErrorResult enum
-        when(config.getMaxAttemptsForGeneration(GenerationResult.ERR_SYSTEM)).thenReturn(5);
+        // Given - ERR_SYSTEM maps to EXTERNAL_SYSTEM_ERROR (retryable, max 5 attempts)
+        when(config.getMaxAttemptsForError(ErrorResult.EXTERNAL_SYSTEM_ERROR)).thenReturn(5);
 
         List<GenerationRunRecord> existingRuns = createGenerationRuns(1);
         when(statusRepository.findGenerationRunsByGenerationId(TEST_GENERATION_ID))
@@ -272,8 +280,8 @@ class AutomaticRetryServiceTest {
 
     @Test
     void testRetryEnhancement_WhenMaxAttemptsReached_ShouldNotRetry() {
-        // Given
-        when(config.getMaxAttemptsForEnhancement(EnhancementResult.ERR_ENHANCEMENT)).thenReturn(3);
+        // Given - ERR_ENHANCEMENT maps to ENHANCER_EXECUTION_FAILED (retryable, max 3 attempts)
+        when(config.getMaxAttemptsForError(ErrorResult.ENHANCER_EXECUTION_FAILED)).thenReturn(3);
 
         // Mock 3 existing runs (max attempts reached)
         List<EnhancementRunRecord> existingRuns = createEnhancementRuns(3);
@@ -289,14 +297,14 @@ class AutomaticRetryServiceTest {
         assertFalse(result, "Should not retry when max attempts reached");
         verify(config).isRetryEnabled();
         verify(statusRepository).findEnhancementRunsByEnhancementId(TEST_ENHANCEMENT_ID);
-        verify(config).getMaxAttemptsForEnhancement(EnhancementResult.ERR_ENHANCEMENT);
+        verify(config).getMaxAttemptsForError(ErrorResult.ENHANCER_EXECUTION_FAILED);
         verify(runManagement, never()).retryEnhancement(any());
     }
 
     @Test
     void testRetryEnhancement_WhenBelowMaxAttempts_ShouldRetry() {
-        // Given
-        when(config.getMaxAttemptsForEnhancement(EnhancementResult.ERR_GENERAL)).thenReturn(2);
+        // Given - ERR_GENERAL maps to ENHANCER_EXECUTION_FAILED (retryable, max 2 attempts)
+        when(config.getMaxAttemptsForError(ErrorResult.ENHANCER_EXECUTION_FAILED)).thenReturn(2);
 
         // Mock 1 existing run (below max attempts)
         List<EnhancementRunRecord> existingRuns = createEnhancementRuns(1);
@@ -312,7 +320,7 @@ class AutomaticRetryServiceTest {
         assertTrue(result, "Should retry when below max attempts");
         verify(config).isRetryEnabled();
         verify(statusRepository).findEnhancementRunsByEnhancementId(TEST_ENHANCEMENT_ID);
-        verify(config).getMaxAttemptsForEnhancement(EnhancementResult.ERR_GENERAL);
+        verify(config).getMaxAttemptsForError(ErrorResult.ENHANCER_EXECUTION_FAILED);
         verify(runManagement).retryEnhancement(TEST_ENHANCEMENT_ID);
         verify(statusRepository).findEnhancementById(TEST_ENHANCEMENT_ID);
         verify(statusRepository, atLeastOnce()).findGenerationById(any());
@@ -322,9 +330,8 @@ class AutomaticRetryServiceTest {
 
     @Test
     void testRetryEnhancement_WhenRetryThrowsException_ShouldReturnFalse() {
-        // Given
-        // Note: isRetryableEnhancement is no longer called - retryability is determined by ErrorResult enum
-        when(config.getMaxAttemptsForEnhancement(EnhancementResult.ERR_ENHANCEMENT)).thenReturn(3);
+        // Given - ERR_ENHANCEMENT maps to ENHANCER_EXECUTION_FAILED (retryable, max 3 attempts)
+        when(config.getMaxAttemptsForError(ErrorResult.ENHANCER_EXECUTION_FAILED)).thenReturn(3);
 
         List<EnhancementRunRecord> existingRuns = createEnhancementRuns(1);
         when(statusRepository.findEnhancementRunsByEnhancementId(TEST_ENHANCEMENT_ID))

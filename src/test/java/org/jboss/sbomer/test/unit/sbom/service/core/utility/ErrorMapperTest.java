@@ -2,6 +2,8 @@ package org.jboss.sbomer.test.unit.sbom.service.core.utility;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Optional;
+
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorCategory;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorOwnership;
@@ -20,121 +22,131 @@ class ErrorMapperTest {
     void testFromException_ValidationException() {
         ValidationException ex = new ValidationException("Invalid input");
         
-        ErrorResult result = ErrorMapper.fromException(ex);
+        Optional<ErrorResult> result = ErrorMapper.fromException(ex);
         
-        assertThat(result).isEqualTo(ErrorResult.INVALID_REQUEST);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.VALIDATION);
-        assertThat(result.isRetryable()).isFalse();
-        assertThat(result.getOwnership()).isEqualTo(ErrorOwnership.CLIENT);
-        assertThat(result.getSeverity()).isEqualTo(ErrorSeverity.WARN);
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.INVALID_REQUEST);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.VALIDATION);
+        assertThat(result.get().isRetryable()).isFalse();
+        assertThat(result.get().getOwnership()).isEqualTo(ErrorOwnership.CLIENT);
+        assertThat(result.get().getSeverity()).isEqualTo(ErrorSeverity.WARN);
     }
 
     @Test
     void testFromException_EntityNotFoundException() {
         EntityNotFoundException ex = new EntityNotFoundException("Entity not found");
         
-        ErrorResult result = ErrorMapper.fromException(ex);
+        Optional<ErrorResult> result = ErrorMapper.fromException(ex);
         
-        assertThat(result).isEqualTo(ErrorResult.ENTITY_NOT_FOUND);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.VALIDATION);
-        assertThat(result.isRetryable()).isFalse();
-        assertThat(result.getOwnership()).isEqualTo(ErrorOwnership.CLIENT);
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.ENTITY_NOT_FOUND);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.VALIDATION);
+        assertThat(result.get().isRetryable()).isFalse();
+        assertThat(result.get().getOwnership()).isEqualTo(ErrorOwnership.CLIENT);
     }
 
     @Test
     void testFromException_InvalidRetryStateException() {
         InvalidRetryStateException ex = new InvalidRetryStateException("Cannot retry");
         
-        ErrorResult result = ErrorMapper.fromException(ex);
+        Optional<ErrorResult> result = ErrorMapper.fromException(ex);
         
-        assertThat(result).isEqualTo(ErrorResult.INVALID_STATE_TRANSITION);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.VALIDATION);
-        assertThat(result.isRetryable()).isFalse();
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.INVALID_STATE_TRANSITION);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.VALIDATION);
+        assertThat(result.get().isRetryable()).isFalse();
     }
 
     @Test
     void testFromException_GenericException() {
         RuntimeException ex = new RuntimeException("Unexpected error");
         
-        ErrorResult result = ErrorMapper.fromException(ex);
+        Optional<ErrorResult> result = ErrorMapper.fromException(ex);
         
-        assertThat(result).isEqualTo(ErrorResult.UNEXPECTED_ERROR);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.INTERNAL);
-        assertThat(result.isRetryable()).isFalse();
-        assertThat(result.getOwnership()).isEqualTo(ErrorOwnership.SERVICE);
-        assertThat(result.getSeverity()).isEqualTo(ErrorSeverity.ERROR);
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.UNEXPECTED_ERROR);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.INTERNAL);
+        assertThat(result.get().isRetryable()).isFalse();
+        assertThat(result.get().getOwnership()).isEqualTo(ErrorOwnership.SERVICE);
+        assertThat(result.get().getSeverity()).isEqualTo(ErrorSeverity.ERROR);
     }
 
     @Test
     void testFromGenerationResult_Success() {
-        ErrorResult result = ErrorMapper.fromGenerationResult(GenerationResult.SUCCESS);
+        Optional<ErrorResult> result = ErrorMapper.fromGenerationResult(GenerationResult.SUCCESS);
         
-        assertThat(result).isNull(); // SUCCESS is not an error
+        assertThat(result).isEmpty();
     }
 
     @Test
     void testFromGenerationResult_GeneralError() {
-        ErrorResult result = ErrorMapper.fromGenerationResult(GenerationResult.ERR_GENERAL);
+        Optional<ErrorResult> result = ErrorMapper.fromGenerationResult(GenerationResult.ERR_GENERAL);
         
-        assertThat(result).isEqualTo(ErrorResult.GENERATOR_EXECUTION_FAILED);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
-        assertThat(result.isRetryable()).isTrue();
-        assertThat(result.getOwnership()).isEqualTo(ErrorOwnership.EXTERNAL_SYSTEM);
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.GENERATOR_EXECUTION_FAILED);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
+        assertThat(result.get().isRetryable()).isTrue();
+        assertThat(result.get().getOwnership()).isEqualTo(ErrorOwnership.EXTERNAL_SYSTEM);
     }
 
     @Test
     void testFromGenerationResult_ConfigError() {
-        ErrorResult result = ErrorMapper.fromGenerationResult(GenerationResult.ERR_CONFIG_INVALID);
+        Optional<ErrorResult> result = ErrorMapper.fromGenerationResult(GenerationResult.ERR_CONFIG_INVALID);
         
-        assertThat(result).isEqualTo(ErrorResult.EXTERNAL_BAD_CONFIGURATION);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
-        assertThat(result.isRetryable()).isFalse();
-        assertThat(result.getOwnership()).isEqualTo(ErrorOwnership.EXTERNAL_SYSTEM);
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.EXTERNAL_BAD_CONFIGURATION);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
+        assertThat(result.get().isRetryable()).isFalse();
+        assertThat(result.get().getOwnership()).isEqualTo(ErrorOwnership.EXTERNAL_SYSTEM);
     }
 
     @Test
     void testFromGenerationResult_SystemError() {
-        ErrorResult result = ErrorMapper.fromGenerationResult(GenerationResult.ERR_SYSTEM);
+        Optional<ErrorResult> result = ErrorMapper.fromGenerationResult(GenerationResult.ERR_SYSTEM);
         
-        assertThat(result).isEqualTo(ErrorResult.EXTERNAL_SYSTEM_ERROR);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
-        assertThat(result.isRetryable()).isTrue();
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.EXTERNAL_SYSTEM_ERROR);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
+        assertThat(result.get().isRetryable()).isTrue();
     }
 
     @Test
     void testFromEnhancementResult_Success() {
-        ErrorResult result = ErrorMapper.fromEnhancementResult(EnhancementResult.SUCCESS);
+        Optional<ErrorResult> result = ErrorMapper.fromEnhancementResult(EnhancementResult.SUCCESS);
         
-        assertThat(result).isNull(); // SUCCESS is not an error
+        assertThat(result).isEmpty();
     }
 
     @Test
     void testFromEnhancementResult_GeneralError() {
-        ErrorResult result = ErrorMapper.fromEnhancementResult(EnhancementResult.ERR_GENERAL);
+        Optional<ErrorResult> result = ErrorMapper.fromEnhancementResult(EnhancementResult.ERR_GENERAL);
         
-        assertThat(result).isEqualTo(ErrorResult.ENHANCER_EXECUTION_FAILED);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
-        assertThat(result.isRetryable()).isTrue();
-        assertThat(result.getOwnership()).isEqualTo(ErrorOwnership.EXTERNAL_SYSTEM);
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.ENHANCER_EXECUTION_FAILED);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
+        assertThat(result.get().isRetryable()).isTrue();
+        assertThat(result.get().getOwnership()).isEqualTo(ErrorOwnership.EXTERNAL_SYSTEM);
     }
 
     @Test
     void testFromEnhancementResult_ConfigError() {
-        ErrorResult result = ErrorMapper.fromEnhancementResult(EnhancementResult.ERR_CONFIG_INVALID);
+        Optional<ErrorResult> result = ErrorMapper.fromEnhancementResult(EnhancementResult.ERR_CONFIG_INVALID);
         
-        assertThat(result).isEqualTo(ErrorResult.EXTERNAL_BAD_CONFIGURATION);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
-        assertThat(result.isRetryable()).isFalse();
-        assertThat(result.getOwnership()).isEqualTo(ErrorOwnership.EXTERNAL_SYSTEM);
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.EXTERNAL_BAD_CONFIGURATION);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
+        assertThat(result.get().isRetryable()).isFalse();
+        assertThat(result.get().getOwnership()).isEqualTo(ErrorOwnership.EXTERNAL_SYSTEM);
     }
 
     @Test
     void testFromEnhancementResult_EnhancementError() {
-        ErrorResult result = ErrorMapper.fromEnhancementResult(EnhancementResult.ERR_ENHANCEMENT);
+        Optional<ErrorResult> result = ErrorMapper.fromEnhancementResult(EnhancementResult.ERR_ENHANCEMENT);
         
-        assertThat(result).isEqualTo(ErrorResult.ENHANCER_EXECUTION_FAILED);
-        assertThat(result.getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
-        assertThat(result.isRetryable()).isTrue();
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(ErrorResult.ENHANCER_EXECUTION_FAILED);
+        assertThat(result.get().getCategory()).isEqualTo(ErrorCategory.EXTERNAL_EXECUTION);
+        assertThat(result.get().isRetryable()).isTrue();
     }
 
     @Test

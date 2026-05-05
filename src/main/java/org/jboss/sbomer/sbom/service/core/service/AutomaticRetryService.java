@@ -27,14 +27,14 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Service responsible for automatic retry logic for failed generations and enhancements.
  *
- * This service evaluates failed operations against configured retry policies and triggers
- * immediate retries when appropriate. Retry decisions are based on:
+ * This service evaluates failed operations and triggers immediate retries based on:
  * - Global retry enablement flag
- * - Error type retryability configuration
- * - Current attempt count vs. maximum allowed attempts
+ * - Canonical error code retryability (from ErrorResult enum)
+ * - Configured maximum retry attempts per error type
+ * - Current attempt count
  *
- * Retries are transparent to external generators/enhancers - they receive normal
- * generation/enhancement requests with no indication that this is a retry attempt.
+ * Retry decisions are made using canonical ErrorResult codes, which provide stable,
+ * service-owned error classification independent of external worker implementations.
  */
 @ApplicationScoped
 @Slf4j
@@ -63,11 +63,11 @@ public class AutomaticRetryService {
      *
      * Retry is triggered only if:
      * 1. Retry is globally enabled
-     * 2. The error type is configured as retryable (based on canonical error code)
-     * 3. The current attempt count is below the configured maximum
+     * 2. The canonical error code is retryable (ErrorResult.isRetryable())
+     * 3. Maximum retry attempts have not been exceeded
      *
      * @param generationId the ID of the failed generation
-     * @param failureResult the failure reason/error code (legacy)
+     * @param failureResult the legacy generation failure result (mapped to canonical error)
      * @return true if retry was triggered, false otherwise
      */
     public boolean tryRetryGeneration(String generationId, GenerationResult failureResult) {
@@ -79,7 +79,7 @@ public class AutomaticRetryService {
         // Map legacy result to canonical error code
         Optional<ErrorResult> canonicalError = ErrorMapper.fromGenerationResult(failureResult);
 
-        // Use canonical error code retryability
+        // Check if error is retryable using canonical code
         if (canonicalError.isEmpty() || !canonicalError.get().isRetryable()) {
             log.debug(
                     "Error {} (canonical: {}) is not retryable, skipping retry for generation {}",
@@ -89,10 +89,12 @@ public class AutomaticRetryService {
             return false;
         }
 
+        ErrorResult error = canonicalError.get();
+
         // Count existing attempts
         List<GenerationRunRecord> runs = statusRepository.findGenerationRunsByGenerationId(generationId);
         int totalAttempts = runs.size();
-        int maxAttempts = config.getMaxAttemptsForGeneration(failureResult);
+        int maxAttempts = config.getMaxAttemptsForError(error);
 
         if (totalAttempts >= maxAttempts) {
             log.info(
@@ -100,18 +102,17 @@ public class AutomaticRetryService {
                     generationId,
                     totalAttempts,
                     maxAttempts,
-                    failureResult);
+                    error);
             return false;
         }
 
         // Trigger immediate retry
         log.info(
-                "Triggering immediate retry for generation {}: attempt {}/{}, legacyError={}, canonicalError={}",
+                "Triggering immediate retry for generation {}: attempt {}/{}, error={}",
                 generationId,
                 totalAttempts + 1,
                 maxAttempts,
-                failureResult,
-                canonicalError);
+                error);
 
         try {
             // Create new run and update status to PENDING_RETRY
@@ -141,11 +142,11 @@ public class AutomaticRetryService {
      *
      * Retry is triggered only if:
      * 1. Retry is globally enabled
-     * 2. The error type is configured as retryable (based on canonical error code)
-     * 3. The current attempt count is below the configured maximum
+     * 2. The canonical error code is retryable (ErrorResult.isRetryable())
+     * 3. Maximum retry attempts have not been exceeded
      *
      * @param enhancementId the ID of the failed enhancement
-     * @param failureResult the failure reason/error code (legacy)
+     * @param failureResult the legacy enhancement failure result (mapped to canonical error)
      * @return true if retry was triggered, false otherwise
      */
     public boolean tryRetryEnhancement(String enhancementId, EnhancementResult failureResult) {
@@ -157,7 +158,7 @@ public class AutomaticRetryService {
         // Map legacy result to canonical error code
         Optional<ErrorResult> canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
 
-        // Use canonical error code retryability
+        // Check if error is retryable using canonical code
         if (canonicalError.isEmpty() || !canonicalError.get().isRetryable()) {
             log.debug(
                     "Error {} (canonical: {}) is not retryable, skipping retry for enhancement {}",
@@ -167,10 +168,12 @@ public class AutomaticRetryService {
             return false;
         }
 
+        ErrorResult error = canonicalError.get();
+
         // Count existing attempts
         List<EnhancementRunRecord> runs = statusRepository.findEnhancementRunsByEnhancementId(enhancementId);
         int totalAttempts = runs.size();
-        int maxAttempts = config.getMaxAttemptsForEnhancement(failureResult);
+        int maxAttempts = config.getMaxAttemptsForError(error);
 
         if (totalAttempts >= maxAttempts) {
             log.info(
@@ -178,34 +181,37 @@ public class AutomaticRetryService {
                     enhancementId,
                     totalAttempts,
                     maxAttempts,
-                    failureResult);
+                    error);
             return false;
         }
 
         // Trigger immediate retry
         log.info(
-                "Triggering immediate retry for enhancement {}: attempt {}/{}, legacyError={}, canonicalError={}",
+                "Triggering immediate retry for enhancement {}: attempt {}/{}, error={}",
                 enhancementId,
                 totalAttempts + 1,
                 maxAttempts,
-                failureResult,
-                canonicalError);
+                error);
 
         try {
             // Create new run and update status to PENDING_RETRY
             runManagement.retryEnhancement(enhancementId);
 
             // Fetch the updated enhancement record
-            EnhancementRecord record = statusRepository.findEnhancementById(enhancementId);
+            EnhancementRecord currentEnhancement = statusRepository.findEnhancementById(enhancementId);
 
-            // Fetch parent generation to get SBOM location
-            GenerationRecord parentGeneration = statusRepository.findGenerationById(record.getGenerationId());
+            // Fetch parent generation (required for enhancement event)
+            GenerationRecord parentGeneration = statusRepository.findGenerationById(currentEnhancement.getGenerationId());
 
-            // Determine inputs (previous enhancement in chain)
-            EnhancementRecord lastFinished = findPreviousEnhancement(parentGeneration, record.getIndex());
+            // Find last finished enhancement (if any) - required for chaining
+            EnhancementRecord lastFinished = findPreviousEnhancement(parentGeneration, currentEnhancement.getIndex());
 
             // Build & Schedule Event
-            EnhancementCreated retryEvent = sbomMapper.toEnhancementCreatedEvent(record, lastFinished, parentGeneration);
+            EnhancementCreated retryEvent = sbomMapper.toEnhancementCreatedEvent(
+                currentEnhancement,
+                lastFinished,
+                parentGeneration
+            );
             enhancementScheduler.schedule(retryEvent);
 
             log.info("Successfully triggered retry for enhancement {}", enhancementId);
@@ -218,6 +224,7 @@ public class AutomaticRetryService {
 
     /**
      * Helper to find the enhancement that ran immediately before the target index.
+     * Returns null if target is the first enhancement (index 0).
      */
     private EnhancementRecord findPreviousEnhancement(GenerationRecord parent, int targetIndex) {
         if (targetIndex == 0) {
@@ -227,8 +234,7 @@ public class AutomaticRetryService {
         return parent.getEnhancements().stream()
                 .filter(e -> e.getIndex() == targetIndex - 1)
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "Could not find previous enhancement with index " + (targetIndex - 1)));
+                .orElse(null);
     }
-}
 
+}
