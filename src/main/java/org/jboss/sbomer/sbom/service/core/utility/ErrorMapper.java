@@ -1,5 +1,7 @@
 package org.jboss.sbomer.sbom.service.core.utility;
 
+import java.util.Optional;
+
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
@@ -27,35 +29,35 @@ public class ErrorMapper {
      * Maps a Java exception to a canonical error result code.
      * 
      * @param exception The exception to map
-     * @return The canonical error result code
+     * @return Optional containing the canonical error result code, or empty if no mapping exists
      */
-    public static ErrorResult fromException(Exception exception) {
+    public static Optional<ErrorResult> fromException(Exception exception) {
         if (exception instanceof ValidationException) {
-            return ErrorResult.INVALID_REQUEST;
+            return Optional.of(ErrorResult.INVALID_REQUEST);
         }
         
         if (exception instanceof EntityNotFoundException) {
-            return ErrorResult.ENTITY_NOT_FOUND;
+            return Optional.of(ErrorResult.ENTITY_NOT_FOUND);
         }
         
         if (exception instanceof InvalidRetryStateException) {
-            return ErrorResult.INVALID_STATE_TRANSITION;
+            return Optional.of(ErrorResult.INVALID_STATE_TRANSITION);
         }
         
         if (exception instanceof IllegalStateException) {
             // Context-dependent: could be orchestration or internal error
             // Default to internal processing error
             log.warn("Mapping IllegalStateException to INTERNAL_PROCESSING_ERROR. Consider using more specific exception types.");
-            return ErrorResult.INTERNAL_PROCESSING_ERROR;
+            return Optional.of(ErrorResult.INTERNAL_PROCESSING_ERROR);
         }
         
         if (exception instanceof IllegalArgumentException) {
-            return ErrorResult.INVALID_REQUEST;
+            return Optional.of(ErrorResult.INVALID_REQUEST);
         }
         
         // Default catch-all for unexpected exceptions
         log.error("Mapping unexpected exception type {} to UNEXPECTED_ERROR", exception.getClass().getSimpleName());
-        return ErrorResult.UNEXPECTED_ERROR;
+        return Optional.of(ErrorResult.UNEXPECTED_ERROR);
     }
 
     /**
@@ -65,33 +67,35 @@ public class ErrorMapper {
      * canonical codes as the primary error identity.
      * 
      * @param generationResult The legacy generation result code
-     * @return The canonical error result code
+     * @return Optional containing the canonical error result code, or empty for SUCCESS
      */
-    public static ErrorResult fromGenerationResult(GenerationResult generationResult) {
+    public static Optional<ErrorResult> fromGenerationResult(GenerationResult generationResult) {
         switch (generationResult) {
             case SUCCESS:
-                // Not an error, but included for completeness
-                return null;
+                // Not an error
+                return Optional.empty();
                 
             case ERR_CONFIG_INVALID:
             case ERR_CONFIG_MISSING:
-                return ErrorResult.EXTERNAL_BAD_CONFIGURATION;
+                return Optional.of(ErrorResult.EXTERNAL_BAD_CONFIGURATION);
                 
             case ERR_OOM:
-                return ErrorResult.EXTERNAL_RESOURCE_EXHAUSTED;
+                return Optional.of(ErrorResult.EXTERNAL_RESOURCE_EXHAUSTED);
                 
             case ERR_SYSTEM:
-                return ErrorResult.EXTERNAL_SYSTEM_ERROR;
+                return Optional.of(ErrorResult.EXTERNAL_SYSTEM_ERROR);
+                
+            case ERR_INDEX_INVALID:
+                return Optional.of(ErrorResult.INVALID_TARGET);
                 
             case ERR_GENERATION:
-            case ERR_INDEX_INVALID:
             case ERR_POST:
             case ERR_MULTI:
-                return ErrorResult.GENERATOR_EXECUTION_FAILED;
+                return Optional.of(ErrorResult.GENERATOR_EXECUTION_FAILED);
                 
             case ERR_GENERAL:
             default:
-                return ErrorResult.GENERATOR_EXECUTION_FAILED;
+                return Optional.of(ErrorResult.GENERATOR_EXECUTION_FAILED);
         }
     }
 
@@ -102,23 +106,23 @@ public class ErrorMapper {
      * canonical codes as the primary error identity.
      * 
      * @param enhancementResult The legacy enhancement result code
-     * @return The canonical error result code
+     * @return Optional containing the canonical error result code, or empty for SUCCESS
      */
-    public static ErrorResult fromEnhancementResult(EnhancementResult enhancementResult) {
+    public static Optional<ErrorResult> fromEnhancementResult(EnhancementResult enhancementResult) {
         switch (enhancementResult) {
             case SUCCESS:
-                // Not an error, but included for completeness
-                return null;
+                // Not an error
+                return Optional.empty();
                 
             case ERR_CONFIG_INVALID:
-                return ErrorResult.EXTERNAL_BAD_CONFIGURATION;
+                return Optional.of(ErrorResult.EXTERNAL_BAD_CONFIGURATION);
                 
             case ERR_ENHANCEMENT:
-                return ErrorResult.ENHANCER_EXECUTION_FAILED;
+                return Optional.of(ErrorResult.ENHANCER_EXECUTION_FAILED);
                 
             case ERR_GENERAL:
             default:
-                return ErrorResult.ENHANCER_EXECUTION_FAILED;
+                return Optional.of(ErrorResult.ENHANCER_EXECUTION_FAILED);
         }
     }
 

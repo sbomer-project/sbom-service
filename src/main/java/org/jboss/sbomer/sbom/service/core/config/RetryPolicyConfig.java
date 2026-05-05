@@ -141,25 +141,7 @@ public class RetryPolicyConfig {
         return enhancementMaxAttempts.getOrDefault(result, 0);
     }
 
-    /**
-     * Checks if a generation error is configured for automatic retry.
-     * 
-     * @param result the generation error result
-     * @return true if the error should be retried, false otherwise
-     */
-    public boolean isRetryableGeneration(GenerationResult result) {
-        return getMaxAttemptsForGeneration(result) > 0;
-    }
 
-    /**
-     * Checks if an enhancement error is configured for automatic retry.
-     * 
-     * @param result the enhancement error result
-     * @return true if the error should be retried, false otherwise
-     */
-    public boolean isRetryableEnhancement(EnhancementResult result) {
-        return getMaxAttemptsForEnhancement(result) > 0;
-    }
 
     /**
      * Reads an optional configuration value with a default fallback.

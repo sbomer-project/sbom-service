@@ -1,6 +1,7 @@
 package org.jboss.sbomer.sbom.service.core.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.jboss.sbomer.events.common.GenerationRequestSpec;
 import org.jboss.sbomer.events.orchestration.EnhancementCreated;
@@ -76,14 +77,14 @@ public class AutomaticRetryService {
         }
 
         // Map legacy result to canonical error code
-        ErrorResult canonicalError = ErrorMapper.fromGenerationResult(failureResult);
+        Optional<ErrorResult> canonicalError = ErrorMapper.fromGenerationResult(failureResult);
 
         // Use canonical error code retryability
-        if (!canonicalError.isRetryable()) {
+        if (canonicalError.isEmpty() || !canonicalError.get().isRetryable()) {
             log.debug(
                     "Error {} (canonical: {}) is not retryable, skipping retry for generation {}",
                     failureResult,
-                    canonicalError,
+                    canonicalError.orElse(null),
                     generationId);
             return false;
         }
@@ -154,14 +155,14 @@ public class AutomaticRetryService {
         }
 
         // Map legacy result to canonical error code
-        ErrorResult canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
+        Optional<ErrorResult> canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
 
         // Use canonical error code retryability
-        if (!canonicalError.isRetryable()) {
+        if (canonicalError.isEmpty() || !canonicalError.get().isRetryable()) {
             log.debug(
                     "Error {} (canonical: {}) is not retryable, skipping retry for enhancement {}",
                     failureResult,
-                    canonicalError,
+                    canonicalError.orElse(null),
                     enhancementId);
             return false;
         }

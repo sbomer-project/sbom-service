@@ -170,11 +170,12 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                 String failureReason = generationUpdate.getData().getReason();
                 
                 // Map to canonical error code for logging and diagnostics
-                ErrorResult canonicalError = ErrorMapper.fromGenerationResult(failureResult);
+                Optional<ErrorResult> canonicalError = ErrorMapper.fromGenerationResult(failureResult);
                 String upstreamReason = failureReason != null ? failureReason : "Unknown";
                 
                 log.error("Generation failed: generationId={} result={} legacyCode={} upstreamReason={} retryable={}", 
-                          generationId, canonicalError, failureResult, upstreamReason, canonicalError.isRetryable());
+                          generationId, canonicalError.orElse(null), failureResult, upstreamReason, 
+                          canonicalError.map(ErrorResult::isRetryable).orElse(false));
                 
                 runManagement.completeGenerationRun(failedRunId, failureResult, failureReason);
                 
@@ -241,11 +242,12 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
                 String failureReason = enhancementUpdate.getData().getReason();
                 
                 // Map to canonical error code for logging and diagnostics
-                ErrorResult canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
+                Optional<ErrorResult> canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
                 String upstreamReason = failureReason != null ? failureReason : "Unknown";
                 
                 log.error("Enhancement failed: enhancementId={} result={} legacyCode={} upstreamReason={} retryable={}", 
-                          enhancementId, canonicalError, failureResult, upstreamReason, canonicalError.isRetryable());
+                          enhancementId, canonicalError.orElse(null), failureResult, upstreamReason, 
+                          canonicalError.map(ErrorResult::isRetryable).orElse(false));
                 
                 runManagement.completeEnhancementRun(failedRunId, failureResult, failureReason);
                 
