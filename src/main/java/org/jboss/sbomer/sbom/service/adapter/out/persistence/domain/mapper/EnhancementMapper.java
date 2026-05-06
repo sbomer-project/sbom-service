@@ -8,18 +8,20 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "jakarta-cdi", uses = IdMapping.class)
+@Mapper(componentModel = "cdi", uses = IdMapping.class)
 public interface EnhancementMapper {
 
     @Mapping(target = "id", source = "enhancementId") // Entity.enhancementId -> DTO.id
     @Mapping(target = "generationId", source = "generation") // Uses IdMapping
     @Mapping(target = "requestId", source = "request")       // Uses IdMapping
+    @Mapping(target = "runs", ignore = true)
     EnhancementRecord toDto(EnhancementEntity entity);
 
     @Mapping(target = "enhancementId", source = "id") // DTO.id -> Entity.enhancementId
     @Mapping(target = "dbId", ignore = true)          // Ignore DB ID
     @Mapping(target = "generation", source = "generationId") // Uses IdMapping
     @Mapping(target = "request", source = "requestId")       // Uses IdMapping
+    @Mapping(target = "runs", ignore = true)
     EnhancementEntity toEntity(EnhancementRecord record);
 
     // List helpers

@@ -80,15 +80,14 @@ public class RunManagementService implements RunManagement {
                 ? GenerationStatus.COMPLETED
                 : GenerationStatus.FAILED;
         generation.setStatus(newGenerationStatus);
-        generation.setLatestResult(result);
         generation.setUpdated(Instant.now());
         if (finalState == RunState.SUCCEEDED || finalState == RunState.FAILED) {
             generation.setFinished(Instant.now());
         }
         repository.updateGeneration(generation);
 
-        log.info("Updated Generation: id={}, status={}, latestResult={}",
-                generation.getId(), newGenerationStatus, result);
+        log.info("Updated Generation: id={}, status={}",
+                generation.getId(), newGenerationStatus);
 
         // 3. Roll up to Request (if Generation has a parent Request)
         if (generation.getRequestId() != null) {
@@ -131,15 +130,14 @@ public class RunManagementService implements RunManagement {
                 ? EnhancementStatus.COMPLETED
                 : EnhancementStatus.FAILED;
         enhancement.setStatus(newEnhancementStatus);
-        enhancement.setLatestResult(result);
         enhancement.setUpdated(Instant.now());
         if (finalState == RunState.SUCCEEDED || finalState == RunState.FAILED) {
             enhancement.setFinished(Instant.now());
         }
         repository.updateEnhancement(enhancement);
 
-        log.info("Updated Enhancement: id={}, status={}, latestResult={}",
-                enhancement.getId(), newEnhancementStatus, result);
+        log.info("Updated Enhancement: id={}, status={}",
+                enhancement.getId(), newEnhancementStatus);
 
         // 3. Roll up to Generation (if Enhancement has a parent Generation)
         if (enhancement.getGenerationId() != null) {
@@ -195,7 +193,6 @@ public class RunManagementService implements RunManagement {
         // PENDING_RETRY clearly indicates this is a retry attempt (internal tracking only)
         // External systems don't receive status in events, so retry is transparent
         generation.setStatus(GenerationStatus.PENDING_RETRY);
-        generation.setLatestResult(null); // Clear the failure reason
         generation.setUpdated(Instant.now());
         generation.setFinished(null); // No longer finished
         repository.updateGeneration(generation);
@@ -256,7 +253,6 @@ public class RunManagementService implements RunManagement {
         // PENDING_RETRY clearly indicates this is a retry attempt (internal tracking only)
         // External systems don't receive status in events, so retry is transparent
         enhancement.setStatus(EnhancementStatus.PENDING_RETRY);
-        enhancement.setLatestResult(null); // Clear the failure reason
         enhancement.setUpdated(Instant.now());
         enhancement.setFinished(null); // No longer finished
         repository.updateEnhancement(enhancement);

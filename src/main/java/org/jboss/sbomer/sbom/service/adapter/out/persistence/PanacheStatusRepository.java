@@ -222,7 +222,6 @@ public class PanacheStatusRepository implements StatusRepository {
             entity.setTargetType(record.getTargetType());
             entity.setTargetIdentifier(record.getTargetIdentifier());
             entity.setChildEnhancementsStatus(record.getChildEnhancementsStatus());
-            entity.setLatestResult(record.getLatestResult());
 
             if (record.getRequestId() != null) {
                 RequestEntity req = requestRepository.find("requestId", record.getRequestId()).firstResult();
