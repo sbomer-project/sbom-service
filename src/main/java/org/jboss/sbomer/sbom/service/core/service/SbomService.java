@@ -13,10 +13,8 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
@@ -150,9 +148,11 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             case "FINISHED":
                 // Find or create active run and complete it
                 String finishedRunId = findOrCreateActiveGenerationRun(generationId);
-                GenerationResult successResult = GenerationResult.fromCode(generationUpdate.getData().getResultCode())
-                        .orElse(GenerationResult.ERR_GENERAL);
-                runManagement.completeGenerationRun(finishedRunId, successResult, "Generation completed");
+                int resultCode = generationUpdate.getData().getResultCode();
+                
+                // Convert result code to canonical error (null for success)
+                ErrorResult errorResult = (resultCode == 0) ? null : ErrorMapper.fromGenerationResultCode(resultCode);
+                runManagement.completeGenerationRun(finishedRunId, errorResult, "Generation completed");
 
                 // Update SBOM URLs (still needed as this is domain-specific data)
                 GenerationRecord finishedGenerationRecord = statusRepository.findGenerationById(generationId);
@@ -165,25 +165,24 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             case "FAILED":
                 // Find or create active run and complete it with failure
                 String failedRunId = findOrCreateActiveGenerationRun(generationId);
-                GenerationResult failureResult = GenerationResult.fromCode(generationUpdate.getData().getResultCode())
-                        .orElse(GenerationResult.ERR_GENERAL);
+                int failureCode = generationUpdate.getData().getResultCode();
                 String failureReason = generationUpdate.getData().getReason();
                 
-                // Map to canonical error code for logging and diagnostics
-                Optional<ErrorResult> canonicalError = ErrorMapper.fromGenerationResult(failureResult);
+                // Convert to canonical error code
+                ErrorResult failureError = ErrorMapper.fromGenerationResultCode(failureCode);
                 String upstreamReason = failureReason != null ? failureReason : "Unknown";
                 
-                log.error("Generation failed: generationId={} result={} legacyCode={} upstreamReason={} retryable={}", 
-                          generationId, canonicalError.orElse(null), failureResult, upstreamReason, 
-                          canonicalError.map(ErrorResult::isRetryable).orElse(false));
+                log.error("Generation failed: generationId={} canonicalError={} resultCode={} upstreamReason={} retryable={}",
+                          generationId, failureError, failureCode, upstreamReason,
+                          failureError.isRetryable());
                 
-                runManagement.completeGenerationRun(failedRunId, failureResult, failureReason);
+                runManagement.completeGenerationRun(failedRunId, failureError, failureReason);
                 
                 // Try automatic immediate retry
-                boolean retried = automaticRetryService.tryRetryGeneration(generationId, failureResult);
+                boolean retried = automaticRetryService.tryRetryGeneration(generationId, failureError);
                 if (!retried) {
-                    log.info("Generation {} will not be retried: result={} legacyError={}", 
-                             generationId, canonicalError, failureResult);
+                    log.info("Generation {} will not be retried: canonicalError={} resultCode={}",
+                             generationId, failureError, failureCode);
                 }
                 break;
         }
@@ -218,10 +217,11 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             case "FINISHED":
                 // Find or create active run and complete it
                 String finishedRunId = findOrCreateActiveEnhancementRun(enhancementId);
-                EnhancementResult successResult = EnhancementResult
-                        .fromCode(enhancementUpdate.getData().getResultCode())
-                        .orElse(EnhancementResult.ERR_GENERAL);
-                runManagement.completeEnhancementRun(finishedRunId, successResult, "Enhancement completed");
+                int resultCode = enhancementUpdate.getData().getResultCode();
+                
+                // Convert result code to canonical error (null for success)
+                ErrorResult errorResult = (resultCode == 0) ? null : ErrorMapper.fromEnhancementResultCode(resultCode);
+                runManagement.completeEnhancementRun(finishedRunId, errorResult, "Enhancement completed");
 
                 // Update SBOM URLs (still needed as this is domain-specific data)
                 EnhancementRecord finishedEnhancementRecord = statusRepository.findEnhancementById(enhancementId);
@@ -236,26 +236,24 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             case "FAILED":
                 // Find or create active run and complete it with failure
                 String failedRunId = findOrCreateActiveEnhancementRun(enhancementId);
-                EnhancementResult failureResult = EnhancementResult
-                        .fromCode(enhancementUpdate.getData().getResultCode())
-                        .orElse(EnhancementResult.ERR_GENERAL);
+                int failureCode = enhancementUpdate.getData().getResultCode();
                 String failureReason = enhancementUpdate.getData().getReason();
                 
-                // Map to canonical error code for logging and diagnostics
-                Optional<ErrorResult> canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
+                // Convert to canonical error code
+                ErrorResult failureError = ErrorMapper.fromEnhancementResultCode(failureCode);
                 String upstreamReason = failureReason != null ? failureReason : "Unknown";
                 
-                log.error("Enhancement failed: enhancementId={} result={} legacyCode={} upstreamReason={} retryable={}", 
-                          enhancementId, canonicalError.orElse(null), failureResult, upstreamReason, 
-                          canonicalError.map(ErrorResult::isRetryable).orElse(false));
+                log.error("Enhancement failed: enhancementId={} canonicalError={} resultCode={} upstreamReason={} retryable={}",
+                          enhancementId, failureError, failureCode, upstreamReason,
+                          failureError.isRetryable());
                 
-                runManagement.completeEnhancementRun(failedRunId, failureResult, failureReason);
+                runManagement.completeEnhancementRun(failedRunId, failureError, failureReason);
                 
                 // Try automatic immediate retry
-                boolean retried = automaticRetryService.tryRetryEnhancement(enhancementId, failureResult);
+                boolean retried = automaticRetryService.tryRetryEnhancement(enhancementId, failureError);
                 if (!retried) {
-                    log.info("Enhancement {} will not be retried: result={} legacyError={}", 
-                             enhancementId, canonicalError, failureResult);
+                    log.info("Enhancement {} will not be retried: canonicalError={} resultCode={}",
+                             enhancementId, failureError, failureCode);
                 }
                 break;
         }

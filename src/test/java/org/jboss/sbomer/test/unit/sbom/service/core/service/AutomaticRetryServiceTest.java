@@ -16,9 +16,7 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
@@ -122,7 +120,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryGeneration(
                 TEST_GENERATION_ID,
-                GenerationResult.ERR_SYSTEM);
+                ErrorResult.EXTERNAL_SYSTEM_ERROR);
 
         // Then
         assertFalse(result, "Should not retry when globally disabled");
@@ -138,7 +136,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryGeneration(
                 TEST_GENERATION_ID,
-                GenerationResult.ERR_CONFIG_INVALID);
+                ErrorResult.EXTERNAL_BAD_CONFIGURATION);
 
         // Then
         assertFalse(result, "Should not retry non-retryable error");
@@ -160,7 +158,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryGeneration(
                 TEST_GENERATION_ID,
-                GenerationResult.ERR_SYSTEM);
+                ErrorResult.EXTERNAL_SYSTEM_ERROR);
 
         // Then
         assertFalse(result, "Should not retry when max attempts reached");
@@ -183,7 +181,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryGeneration(
                 TEST_GENERATION_ID,
-                GenerationResult.ERR_SYSTEM);
+                ErrorResult.EXTERNAL_SYSTEM_ERROR);
 
         // Then
         assertTrue(result, "Should retry when below max attempts");
@@ -210,7 +208,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryGeneration(
                 TEST_GENERATION_ID,
-                GenerationResult.ERR_OOM);
+                ErrorResult.EXTERNAL_RESOURCE_EXHAUSTED);
 
         // Then
         assertTrue(result, "Should retry after first attempt failure");
@@ -236,7 +234,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryGeneration(
                 TEST_GENERATION_ID,
-                GenerationResult.ERR_SYSTEM);
+                ErrorResult.EXTERNAL_SYSTEM_ERROR);
 
         // Then
         assertFalse(result, "Should return false when retry throws exception");
@@ -253,7 +251,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryEnhancement(
                 TEST_ENHANCEMENT_ID,
-                EnhancementResult.ERR_GENERAL);
+                ErrorResult.ENHANCER_EXECUTION_FAILED);
 
         // Then
         assertFalse(result, "Should not retry when globally disabled");
@@ -269,7 +267,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryEnhancement(
                 TEST_ENHANCEMENT_ID,
-                EnhancementResult.ERR_CONFIG_INVALID);
+                ErrorResult.EXTERNAL_BAD_CONFIGURATION);
 
         // Then
         assertFalse(result, "Should not retry non-retryable error");
@@ -291,7 +289,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryEnhancement(
                 TEST_ENHANCEMENT_ID,
-                EnhancementResult.ERR_ENHANCEMENT);
+                ErrorResult.ENHANCER_EXECUTION_FAILED);
 
         // Then
         assertFalse(result, "Should not retry when max attempts reached");
@@ -314,7 +312,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryEnhancement(
                 TEST_ENHANCEMENT_ID,
-                EnhancementResult.ERR_GENERAL);
+                ErrorResult.ENHANCER_EXECUTION_FAILED);
 
         // Then
         assertTrue(result, "Should retry when below max attempts");
@@ -343,7 +341,7 @@ class AutomaticRetryServiceTest {
         // When
         boolean result = automaticRetryService.tryRetryEnhancement(
                 TEST_ENHANCEMENT_ID,
-                EnhancementResult.ERR_ENHANCEMENT);
+                ErrorResult.ENHANCER_EXECUTION_FAILED);
 
         // Then
         assertFalse(result, "Should return false when retry throws exception");

@@ -28,7 +28,6 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
@@ -183,8 +182,8 @@ public class SbomServiceTest {
         // Execute
         sbomService.processGenerationStatusUpdate(generationUpdate);
 
-        // Verify Run completion
-        verify(runManagement).completeGenerationRun(runId, GenerationResult.SUCCESS, "Generation completed");
+        // Verify Run completion (null = success)
+        verify(runManagement).completeGenerationRun(runId, null, "Generation completed");
 
         // Verify Generation Update (Capturing the record to check finalSbomUrls)
         verify(statusRepository, times(2)).updateGeneration(generationRecordCaptor.capture());

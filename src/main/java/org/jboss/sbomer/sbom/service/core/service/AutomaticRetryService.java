@@ -1,7 +1,6 @@
 package org.jboss.sbomer.sbom.service.core.service;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.jboss.sbomer.events.common.GenerationRequestSpec;
 import org.jboss.sbomer.events.orchestration.EnhancementCreated;
@@ -11,14 +10,11 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 import org.jboss.sbomer.sbom.service.core.port.spi.enhancement.EnhancementScheduler;
 import org.jboss.sbomer.sbom.service.core.port.spi.generation.GenerationScheduler;
-import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -86,29 +82,25 @@ public class AutomaticRetryService {
      * original scheduling payload, and republishes a {@link GenerationCreated} event.
      *
      * @param generationId the ID of the failed generation
-     * @param failureResult the legacy generation failure result (mapped to canonical error)
+     * @param errorResult the canonical error result from the failure
      * @return true if retry was triggered, false otherwise
      */
-    public boolean tryRetryGeneration(String generationId, GenerationResult failureResult) {
+    public boolean tryRetryGeneration(String generationId, ErrorResult errorResult) {
         if (!config.isRetryEnabled()) {
             log.debug("Retry disabled globally, skipping retry for generation {}", generationId);
             return false;
         }
 
-        // Map legacy result to canonical error code
-        Optional<ErrorResult> canonicalError = ErrorMapper.fromGenerationResult(failureResult);
-
-        // Check if error is retryable using canonical code
-        if (canonicalError.isEmpty() || !canonicalError.get().isRetryable()) {
+        // Check if error is retryable
+        if (errorResult == null || !errorResult.isRetryable()) {
             log.debug(
-                    "Error {} (canonical: {}) is not retryable, skipping retry for generation {}",
-                    failureResult,
-                    canonicalError.orElse(null),
+                    "Error {} is not retryable, skipping retry for generation {}",
+                    errorResult,
                     generationId);
             return false;
         }
 
-        ErrorResult error = canonicalError.get();
+        ErrorResult error = errorResult;
 
         // Count existing attempts
         List<GenerationRunRecord> runs = statusRepository.findGenerationRunsByGenerationId(generationId);
@@ -170,29 +162,25 @@ public class AutomaticRetryService {
      * {@link EnhancementCreated} event.
      *
      * @param enhancementId the ID of the failed enhancement
-     * @param failureResult the legacy enhancement failure result (mapped to canonical error)
+     * @param errorResult the canonical error result from the failure
      * @return true if retry was triggered, false otherwise
      */
-    public boolean tryRetryEnhancement(String enhancementId, EnhancementResult failureResult) {
+    public boolean tryRetryEnhancement(String enhancementId, ErrorResult errorResult) {
         if (!config.isRetryEnabled()) {
             log.debug("Retry disabled globally, skipping retry for enhancement {}", enhancementId);
             return false;
         }
 
-        // Map legacy result to canonical error code
-        Optional<ErrorResult> canonicalError = ErrorMapper.fromEnhancementResult(failureResult);
-
-        // Check if error is retryable using canonical code
-        if (canonicalError.isEmpty() || !canonicalError.get().isRetryable()) {
+        // Check if error is retryable
+        if (errorResult == null || !errorResult.isRetryable()) {
             log.debug(
-                    "Error {} (canonical: {}) is not retryable, skipping retry for enhancement {}",
-                    failureResult,
-                    canonicalError.orElse(null),
+                    "Error {} is not retryable, skipping retry for enhancement {}",
+                    errorResult,
                     enhancementId);
             return false;
         }
 
-        ErrorResult error = canonicalError.get();
+        ErrorResult error = errorResult;
 
         // Count existing attempts
         List<EnhancementRunRecord> runs = statusRepository.findEnhancementRunsByEnhancementId(enhancementId);

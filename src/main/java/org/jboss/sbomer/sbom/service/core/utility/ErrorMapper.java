@@ -157,6 +157,42 @@ public class ErrorMapper {
     }
 
     /**
+     * Maps a numeric generation result code directly to a canonical error result.
+     *
+     * This is a convenience method for Kafka adapters that receive numeric result codes
+     * from external workers. It combines code parsing and error mapping in one step.
+     *
+     * <p><b>Important:</b> Returns {@code null} for success (resultCode == 0), which indicates
+     * no error occurred. Any non-null ErrorResult indicates a failure.</p>
+     *
+     * @param resultCode The numeric result code from the external worker (0, 1, 5, 7, etc.)
+     * @return The canonical error result, or <b>null if the code represents success</b>
+     */
+    public static ErrorResult fromGenerationResultCode(int resultCode) {
+        return GenerationResult.fromCode(resultCode)
+                .flatMap(ErrorMapper::fromGenerationResult)
+                .orElse(ErrorResult.GENERATOR_EXECUTION_FAILED);
+    }
+
+    /**
+     * Maps a numeric enhancement result code directly to a canonical error result.
+     *
+     * This is a convenience method for Kafka adapters that receive numeric result codes
+     * from external workers. It combines code parsing and error mapping in one step.
+     *
+     * <p><b>Important:</b> Returns {@code null} for success (resultCode == 0), which indicates
+     * no error occurred. Any non-null ErrorResult indicates a failure.</p>
+     *
+     * @param resultCode The numeric result code from the external worker (0, 1, 2, 5, etc.)
+     * @return The canonical error result, or <b>null if the code represents success</b>
+     */
+    public static ErrorResult fromEnhancementResultCode(int resultCode) {
+        return EnhancementResult.fromCode(resultCode)
+                .flatMap(ErrorMapper::fromEnhancementResult)
+                .orElse(ErrorResult.ENHANCER_EXECUTION_FAILED);
+    }
+
+    /**
      * Builds a human-readable reason message for a generation failure.
      * 
      * @param generationResult The legacy generation result

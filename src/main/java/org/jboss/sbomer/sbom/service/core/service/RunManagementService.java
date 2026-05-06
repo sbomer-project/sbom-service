@@ -9,10 +9,8 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ChildEnhancementsStatus;
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
@@ -20,7 +18,6 @@ import org.jboss.sbomer.sbom.service.core.domain.exception.EntityNotFoundExcepti
 import org.jboss.sbomer.sbom.service.core.domain.exception.InvalidRetryStateException;
 import org.jboss.sbomer.sbom.service.core.port.api.RunManagement;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
-import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 import org.jboss.sbomer.sbom.service.core.utility.TsidUtility;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -46,8 +43,8 @@ public class RunManagementService implements RunManagement {
     // ==================== GENERATION RUN COMPLETION (Bottom-Up Roll-up) ====================
 
     @Override
-    public void completeGenerationRun(String runId, GenerationResult result, String message) {
-        log.info("Completing GenerationRun: runId={}, result={}", runId, result);
+    public void completeGenerationRun(String runId, ErrorResult errorResult, String message) {
+        log.info("Completing GenerationRun: runId={}, errorResult={}", runId, errorResult);
 
         // 1. Fetch and update the Run
         GenerationRunRecord run = repository.findGenerationRunById(runId);
@@ -55,15 +52,14 @@ public class RunManagementService implements RunManagement {
             throw new EntityNotFoundException("GenerationRun not found: " + runId);
         }
 
-        RunState finalState = (result == GenerationResult.SUCCESS) ? RunState.SUCCEEDED : RunState.FAILED;
+        RunState finalState = (errorResult == null) ? RunState.SUCCEEDED : RunState.FAILED;
         run.setState(finalState);
         
-        // Map to canonical error code and preserve upstream reason
+        // Store canonical error result and upstream reason
         if (finalState == RunState.FAILED) {
-            ErrorResult canonicalError = ErrorMapper.fromGenerationResult(result).orElse(ErrorResult.GENERATOR_EXECUTION_FAILED);
-            run.setErrorResult(canonicalError);
-            run.setUpstreamReason(result.name()); // Preserve legacy code as upstream diagnostic
-            log.debug("Mapped generation failure: legacyCode={} -> canonicalError={}", result, canonicalError);
+            run.setErrorResult(errorResult);
+            run.setUpstreamReason(message); // Store the raw upstream reason
+            log.debug("Stored canonical error: {} with upstream reason: {}", errorResult, message);
         }
         
         run.setMessage(message);
@@ -96,8 +92,8 @@ public class RunManagementService implements RunManagement {
     }
 
     @Override
-    public void completeEnhancementRun(String runId, EnhancementResult result, String message) {
-        log.info("Completing EnhancementRun: runId={}, result={}", runId, result);
+    public void completeEnhancementRun(String runId, ErrorResult errorResult, String message) {
+        log.info("Completing EnhancementRun: runId={}, errorResult={}", runId, errorResult);
 
         // 1. Fetch and update the Run
         EnhancementRunRecord run = repository.findEnhancementRunById(runId);
@@ -105,15 +101,14 @@ public class RunManagementService implements RunManagement {
             throw new EntityNotFoundException("EnhancementRun not found: " + runId);
         }
 
-        RunState finalState = (result == EnhancementResult.SUCCESS) ? RunState.SUCCEEDED : RunState.FAILED;
+        RunState finalState = (errorResult == null) ? RunState.SUCCEEDED : RunState.FAILED;
         run.setState(finalState);
         
-        // Map to canonical error code and preserve upstream reason
+        // Store canonical error result and upstream reason
         if (finalState == RunState.FAILED) {
-            ErrorResult canonicalError = ErrorMapper.fromEnhancementResult(result).orElse(ErrorResult.ENHANCER_EXECUTION_FAILED);
-            run.setErrorResult(canonicalError);
-            run.setUpstreamReason(result.name()); // Preserve legacy code as upstream diagnostic
-            log.debug("Mapped enhancement failure: legacyCode={} -> canonicalError={}", result, canonicalError);
+            run.setErrorResult(errorResult);
+            run.setUpstreamReason(message); // Store the raw upstream reason
+            log.debug("Stored canonical error: {} with upstream reason: {}", errorResult, message);
         }
         
         run.setMessage(message);
