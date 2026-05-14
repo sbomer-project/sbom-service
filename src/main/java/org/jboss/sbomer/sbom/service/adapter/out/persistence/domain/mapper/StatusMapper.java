@@ -11,7 +11,7 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "jakarta-cdi", uses = {GenerationMapper.class, EnhancementMapper.class})
+@Mapper(componentModel = "cdi", uses = {GenerationMapper.class, EnhancementMapper.class})
 public interface StatusMapper {
 
     // --- Main Request Mapping ---

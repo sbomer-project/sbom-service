@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.jboss.sbomer.sbom.service.core.domain.enums.ChildEnhancementsStatus;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 
 import lombok.EqualsAndHashCode;
@@ -33,8 +32,6 @@ public class GenerationRecord {
     private Instant updated;
     private Instant finished;
     private GenerationStatus status;
-    private Integer result;
-    private String reason;
     private String requestId;
     private String targetType;
     private String targetIdentifier;
@@ -44,6 +41,5 @@ public class GenerationRecord {
     private Collection<String> finalSbomUrls;
     private Collection<EnhancementRecord> enhancements;
     private ChildEnhancementsStatus childEnhancementsStatus;
-    private GenerationResult latestResult;
     private Collection<GenerationRunRecord> runs;
 }

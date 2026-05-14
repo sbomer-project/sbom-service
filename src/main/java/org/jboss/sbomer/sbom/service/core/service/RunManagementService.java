@@ -9,9 +9,8 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
 import org.jboss.sbomer.sbom.service.core.domain.enums.ChildEnhancementsStatus;
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
@@ -44,8 +43,8 @@ public class RunManagementService implements RunManagement {
     // ==================== GENERATION RUN COMPLETION (Bottom-Up Roll-up) ====================
 
     @Override
-    public void completeGenerationRun(String runId, GenerationResult result, String message) {
-        log.info("Completing GenerationRun: runId={}, result={}", runId, result);
+    public void completeGenerationRun(String runId, ErrorResult errorResult, String message) {
+        log.info("Completing GenerationRun: runId={}, errorResult={}", runId, errorResult);
 
         // 1. Fetch and update the Run
         GenerationRunRecord run = repository.findGenerationRunById(runId);
@@ -53,9 +52,16 @@ public class RunManagementService implements RunManagement {
             throw new EntityNotFoundException("GenerationRun not found: " + runId);
         }
 
-        RunState finalState = (result == GenerationResult.SUCCESS) ? RunState.SUCCEEDED : RunState.FAILED;
+        RunState finalState = (errorResult == null) ? RunState.SUCCEEDED : RunState.FAILED;
         run.setState(finalState);
-        run.setReason(result);
+        
+        // Store canonical error result and upstream reason
+        if (finalState == RunState.FAILED) {
+            run.setErrorResult(errorResult);
+            run.setUpstreamReason(message); // Store the raw upstream reason
+            log.debug("Stored canonical error: {} with upstream reason: {}", errorResult, message);
+        }
+        
         run.setMessage(message);
         run.setCompletionTime(Instant.now());
         repository.updateGenerationRun(run);
@@ -70,15 +76,14 @@ public class RunManagementService implements RunManagement {
                 ? GenerationStatus.COMPLETED
                 : GenerationStatus.FAILED;
         generation.setStatus(newGenerationStatus);
-        generation.setLatestResult(result);
         generation.setUpdated(Instant.now());
         if (finalState == RunState.SUCCEEDED || finalState == RunState.FAILED) {
             generation.setFinished(Instant.now());
         }
         repository.updateGeneration(generation);
 
-        log.info("Updated Generation: id={}, status={}, latestResult={}",
-                generation.getId(), newGenerationStatus, result);
+        log.info("Updated Generation: id={}, status={}",
+                generation.getId(), newGenerationStatus);
 
         // 3. Roll up to Request (if Generation has a parent Request)
         if (generation.getRequestId() != null) {
@@ -87,8 +92,8 @@ public class RunManagementService implements RunManagement {
     }
 
     @Override
-    public void completeEnhancementRun(String runId, EnhancementResult result, String message) {
-        log.info("Completing EnhancementRun: runId={}, result={}", runId, result);
+    public void completeEnhancementRun(String runId, ErrorResult errorResult, String message) {
+        log.info("Completing EnhancementRun: runId={}, errorResult={}", runId, errorResult);
 
         // 1. Fetch and update the Run
         EnhancementRunRecord run = repository.findEnhancementRunById(runId);
@@ -96,9 +101,16 @@ public class RunManagementService implements RunManagement {
             throw new EntityNotFoundException("EnhancementRun not found: " + runId);
         }
 
-        RunState finalState = (result == EnhancementResult.SUCCESS) ? RunState.SUCCEEDED : RunState.FAILED;
+        RunState finalState = (errorResult == null) ? RunState.SUCCEEDED : RunState.FAILED;
         run.setState(finalState);
-        run.setReason(result);
+        
+        // Store canonical error result and upstream reason
+        if (finalState == RunState.FAILED) {
+            run.setErrorResult(errorResult);
+            run.setUpstreamReason(message); // Store the raw upstream reason
+            log.debug("Stored canonical error: {} with upstream reason: {}", errorResult, message);
+        }
+        
         run.setMessage(message);
         run.setCompletionTime(Instant.now());
         repository.updateEnhancementRun(run);
@@ -113,15 +125,14 @@ public class RunManagementService implements RunManagement {
                 ? EnhancementStatus.COMPLETED
                 : EnhancementStatus.FAILED;
         enhancement.setStatus(newEnhancementStatus);
-        enhancement.setLatestResult(result);
         enhancement.setUpdated(Instant.now());
         if (finalState == RunState.SUCCEEDED || finalState == RunState.FAILED) {
             enhancement.setFinished(Instant.now());
         }
         repository.updateEnhancement(enhancement);
 
-        log.info("Updated Enhancement: id={}, status={}, latestResult={}",
-                enhancement.getId(), newEnhancementStatus, result);
+        log.info("Updated Enhancement: id={}, status={}",
+                enhancement.getId(), newEnhancementStatus);
 
         // 3. Roll up to Generation (if Enhancement has a parent Generation)
         if (enhancement.getGenerationId() != null) {
@@ -142,6 +153,10 @@ public class RunManagementService implements RunManagement {
         }
 
         // 2. Validate that it's in a retryable state
+        if (generation.getStatus() == GenerationStatus.PENDING_RETRY) {
+            throw new InvalidRetryStateException(
+                    "Retry already in progress for generation: " + generationId);
+        }
         if (generation.getStatus() != GenerationStatus.FAILED) {
             throw new InvalidRetryStateException(
                     "Generation must be in FAILED state to retry. Current state: " + generation.getStatus());
@@ -160,7 +175,8 @@ public class RunManagementService implements RunManagement {
         newRun.setGenerationId(generationId);
         newRun.setAttemptNumber(nextAttempt);
         newRun.setState(RunState.PENDING);
-        newRun.setReason(null); // Will be set when run completes
+        newRun.setErrorResult(null); // Will be set when run completes with failure
+        newRun.setUpstreamReason(null);
         newRun.setMessage("Manual retry attempt " + nextAttempt);
         newRun.setStartTime(Instant.now());
         newRun.setCompletionTime(null);
@@ -168,14 +184,15 @@ public class RunManagementService implements RunManagement {
 
         log.info("Created new GenerationRun: runId={}, attempt={}", newRun.getId(), nextAttempt);
 
-        // 5. Resurrect the Generation (FAILED -> GENERATING)
-        generation.setStatus(GenerationStatus.GENERATING);
-        generation.setLatestResult(null); // Clear the failure reason
+        // 5. Resurrect the Generation (FAILED -> PENDING_RETRY)
+        // PENDING_RETRY clearly indicates this is a retry attempt (internal tracking only)
+        // External systems don't receive status in events, so retry is transparent
+        generation.setStatus(GenerationStatus.PENDING_RETRY);
         generation.setUpdated(Instant.now());
         generation.setFinished(null); // No longer finished
         repository.updateGeneration(generation);
 
-        log.info("Resurrected Generation: id={}, status={}", generationId, GenerationStatus.GENERATING);
+        log.info("Resurrected Generation: id={}, status={}", generationId, GenerationStatus.PENDING_RETRY);
 
         // 6. Reverse roll-up to Request (if applicable)
         if (generation.getRequestId() != null) {
@@ -196,6 +213,10 @@ public class RunManagementService implements RunManagement {
         }
 
         // 2. Validate that it's in a retryable state
+        if (enhancement.getStatus() == EnhancementStatus.PENDING_RETRY) {
+            throw new InvalidRetryStateException(
+                    "Retry already in progress for enhancement: " + enhancementId);
+        }
         if (enhancement.getStatus() != EnhancementStatus.FAILED) {
             throw new InvalidRetryStateException(
                     "Enhancement must be in FAILED state to retry. Current state: " + enhancement.getStatus());
@@ -214,7 +235,8 @@ public class RunManagementService implements RunManagement {
         newRun.setEnhancementId(enhancementId);
         newRun.setAttemptNumber(nextAttempt);
         newRun.setState(RunState.PENDING);
-        newRun.setReason(null); // Will be set when run completes
+        newRun.setErrorResult(null); // Will be set when run completes with failure
+        newRun.setUpstreamReason(null);
         newRun.setMessage("Manual retry attempt " + nextAttempt);
         newRun.setStartTime(Instant.now());
         newRun.setCompletionTime(null);
@@ -222,14 +244,15 @@ public class RunManagementService implements RunManagement {
 
         log.info("Created new EnhancementRun: runId={}, attempt={}", newRun.getId(), nextAttempt);
 
-        // 5. Resurrect the Enhancement (FAILED -> ENHANCING)
-        enhancement.setStatus(EnhancementStatus.ENHANCING);
-        enhancement.setLatestResult(null); // Clear the failure reason
+        // 5. Resurrect the Enhancement (FAILED -> PENDING_RETRY)
+        // PENDING_RETRY clearly indicates this is a retry attempt (internal tracking only)
+        // External systems don't receive status in events, so retry is transparent
+        enhancement.setStatus(EnhancementStatus.PENDING_RETRY);
         enhancement.setUpdated(Instant.now());
         enhancement.setFinished(null); // No longer finished
         repository.updateEnhancement(enhancement);
 
-        log.info("Resurrected Enhancement: id={}, status={}", enhancementId, EnhancementStatus.ENHANCING);
+        log.info("Resurrected Enhancement: id={}, status={}", enhancementId, EnhancementStatus.PENDING_RETRY);
 
         // 6. Reverse roll-up to Generation (if applicable)
         if (enhancement.getGenerationId() != null) {
@@ -366,7 +389,7 @@ public class RunManagementService implements RunManagement {
 
         for (GenerationRecord gen : generations) {
             switch (gen.getStatus()) {
-                case PENDING, GENERATING:
+                case PENDING, PENDING_RETRY, GENERATING:
                     anyProcessing = true;
                     break;
                 case FAILED:
@@ -396,7 +419,7 @@ public class RunManagementService implements RunManagement {
 
         for (EnhancementRecord enh : enhancements) {
             switch (enh.getStatus()) {
-                case PENDING, ENHANCING:
+                case PENDING, PENDING_RETRY, ENHANCING:
                     anyProcessing = true;
                     break;
                 case FAILED:

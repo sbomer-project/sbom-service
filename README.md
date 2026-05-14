@@ -95,11 +95,80 @@ View Generations for a Request:
 curl -s http://localhost:8080/api/v1/requests/{requestId}/generations | jq
 ```
 
-### 3.Handling Failures (Retries)
+### 3. Handling Failures (Retries)
 
 The system employs a "Silent Failure" strategy. If a Generation or Enhancement fails, the chain stops immediately to prevent "Zombie" processes. No final notification is sent.
 
-To recover, an Admin must manually retry the specific failed record.
+#### Automatic Retries
+
+The service supports **automatic immediate retry** for transient failures. When enabled, failed generations and enhancements are automatically retried based on canonical error type configuration.
+
+**Canonical Error System:**
+
+The service uses a **canonical error classification system** (`ErrorResult` enum) that provides stable, service-owned error codes independent of external tool implementations. This ensures consistent retry behavior regardless of which generator or enhancer is used.
+
+**Error Categories:**
+- **VALIDATION** - Client input errors (e.g., `INVALID_TARGET`, `INVALID_REQUEST`) - Not retryable
+- **CONFIGURATION** - Setup/config issues (e.g., `CONFIG_MISSING`, `SCHEMA_REGISTRY_ERROR`) - Mixed retryability
+- **ORCHESTRATION** - Service workflow errors (e.g., `GENERATION_SCHEDULING_ERROR`) - Usually retryable
+- **EXTERNAL_EXECUTION** - Generator/enhancer failures (e.g., `GENERATOR_EXECUTION_FAILED`, `EXTERNAL_RESOURCE_EXHAUSTED`) - Usually retryable
+- **INTERNAL** - Service bugs or infrastructure (e.g., `DATABASE_ERROR`, `UNEXPECTED_ERROR`) - Mixed retryability
+
+**Configuration** (`application.properties`):
+
+```properties
+# Enable/disable automatic retry globally
+sbomer.retry.enabled=true
+
+# Retryable errors (transient failures - infrastructure/platform issues)
+sbomer.retry.generation.EXTERNAL_RESOURCE_EXHAUSTED.max-attempts=3
+sbomer.retry.generation.EXTERNAL_SYSTEM_ERROR.max-attempts=3
+sbomer.retry.generation.GENERATOR_EXECUTION_FAILED.max-attempts=2
+sbomer.retry.generation.EXTERNAL_TIMEOUT.max-attempts=3
+
+# Non-retryable errors (permanent failures - validation/configuration issues)
+sbomer.retry.generation.EXTERNAL_BAD_CONFIGURATION.max-attempts=0
+sbomer.retry.generation.INVALID_TARGET.max-attempts=0
+sbomer.retry.generation.INVALID_REQUEST.max-attempts=0
+```
+
+**Legacy Error Mapping:**
+
+External workers may still report legacy error codes (e.g., `ERR_OOM`, `ERR_SYSTEM`). The service automatically maps these to canonical codes:
+- `ERR_OOM` → `EXTERNAL_RESOURCE_EXHAUSTED`
+- `ERR_SYSTEM` → `EXTERNAL_SYSTEM_ERROR`
+- `ERR_INDEX_INVALID` → `INVALID_TARGET`
+- `ERR_GENERATION` → `GENERATOR_EXECUTION_FAILED`
+- `ERR_ENHANCEMENT` → `ENHANCER_EXECUTION_FAILED`
+- `ERR_CONFIG_INVALID` → `EXTERNAL_BAD_CONFIGURATION`
+
+**How It Works:**
+- When a generation/enhancement fails, the service maps the error to a canonical code
+- The canonical code determines if the error is retryable based on configuration
+- If retry is allowed and max attempts not reached, a new run is created immediately
+- Retries are transparent to generators/enhancers (they see normal requests)
+- Each retry increments the attempt number tracked in the Run entity
+- Original upstream error reasons are preserved in `upstream_reason` field for diagnostics
+
+**Monitoring Retries:**
+
+View all runs for a generation (including retries):
+```shell script
+curl -s http://localhost:8080/api/v1/generations/{generationId}/runs | jq
+```
+
+Query retry statistics:
+```sql
+-- Find generations with multiple attempts
+SELECT generation_id, COUNT(*) as attempts
+FROM generation_run
+GROUP BY generation_id
+HAVING COUNT(*) > 1;
+```
+
+#### Manual Retries
+
+For cases where automatic retry is disabled or exhausted, admins can manually retry failed records.
 
 Retry a Failed Generation: Resets status to NEW and re-schedules the generation event.
 

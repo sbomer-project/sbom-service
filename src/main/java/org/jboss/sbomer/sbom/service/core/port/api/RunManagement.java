@@ -2,8 +2,7 @@ package org.jboss.sbomer.sbom.service.core.port.api;
 
 import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 
 /**
  * Port for managing execution runs and their state transitions.
@@ -12,21 +11,23 @@ public interface RunManagement {
     
     /**
      * Complete a GenerationRun and trigger bottom-up roll-up.
-     * 
+     *
      * @param runId The ID of the run to complete
-     * @param result The result code (SUCCESS, ERR_OOM, etc.)
+     * @param errorResult The canonical error result. <b>null indicates success</b>,
+     *                    any ErrorResult value indicates failure.
      * @param message Optional human-readable message
      */
-    void completeGenerationRun(String runId, GenerationResult result, String message);
+    void completeGenerationRun(String runId, ErrorResult errorResult, String message);
     
     /**
      * Complete an EnhancementRun and trigger bottom-up roll-up.
-     * 
+     *
      * @param runId The ID of the run to complete
-     * @param result The result code (SUCCESS, ERR_GENERAL, etc.)
+     * @param errorResult The canonical error result. <b>null indicates success</b>,
+     *                    any ErrorResult value indicates failure.
      * @param message Optional human-readable message
      */
-    void completeEnhancementRun(String runId, EnhancementResult result, String message);
+    void completeEnhancementRun(String runId, ErrorResult errorResult, String message);
     
     /**
      * Retry a failed Generation with top-down resurrection.

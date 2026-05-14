@@ -4,6 +4,9 @@ public enum GenerationStatus {
     /** Generation created but not yet scheduled */
     PENDING,
 
+    /** Generation retry queued, waiting to be scheduled (internal only) */
+    PENDING_RETRY,
+
     /** Generation is actively running */
     GENERATING,
 
@@ -31,5 +34,19 @@ public enum GenerationStatus {
 
     public boolean isFinal() {
         return this == COMPLETED || this == FAILED;
+    }
+
+    /**
+     * Check if this status represents a retry attempt
+     */
+    public boolean isRetry() {
+        return this == PENDING_RETRY;
+    }
+
+    /**
+     * Check if this status represents a pending state (initial or retry)
+     */
+    public boolean isPending() {
+        return this == PENDING || this == PENDING_RETRY;
     }
 }

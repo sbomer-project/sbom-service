@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -61,10 +60,6 @@ public class EnhancementEntity extends PanacheEntityBase {
     @Enumerated(EnumType.STRING)
     private EnhancementStatus status;
 
-    private Integer result;
-
-    private String reason;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "request_db_id")
     private RequestEntity request;
@@ -77,14 +72,6 @@ public class EnhancementEntity extends PanacheEntityBase {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "generation_db_id")
     private GenerationEntity generation;
-
-    /**
-     * The result from the most recent EnhancementRun.
-     * Null while actively enhancing, populated when run completes.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "latest_result")
-    private EnhancementResult latestResult;
 
     /**
      * Append-only log of all execution attempts for this enhancement.

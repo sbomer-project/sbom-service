@@ -1,15 +1,15 @@
 package org.jboss.sbomer.sbom.service.adapter.out.persistence;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.Collection;
-import java.util.Set;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ArrayList;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.jboss.sbomer.sbom.service.adapter.in.rest.model.Page;
 import org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity.EnhancementEntity;
@@ -111,7 +111,7 @@ public class PanacheStatusRepository implements StatusRepository {
 
     @Override
     public Page<RequestRecord> findAllRequests(int pageIndex, int pageSize) {
-        PanacheQuery<RequestEntity> query = requestRepository.findAll(Sort.by("dbId"));
+        PanacheQuery<RequestEntity> query = requestRepository.findAll(Sort.descending("dbId"));
         query.page(pageIndex, pageSize);
         List<RequestRecord> records = query.list().stream().map(mapper::toDto).toList();
         return Page.<RequestRecord>builder()
@@ -158,7 +158,7 @@ public class PanacheStatusRepository implements StatusRepository {
 
     @Override
     public Page<GenerationRecord> findAllGenerations(int pageIndex, int pageSize) {
-        PanacheQuery<GenerationEntity> query = generationRepository.findAll(Sort.by("dbId"));
+        PanacheQuery<GenerationEntity> query = generationRepository.findAll(Sort.descending("dbId"));
         query.page(pageIndex, pageSize);
         List<GenerationRecord> records = query.list().stream().map(generationMapper::toDto).toList();
 
@@ -189,7 +189,7 @@ public class PanacheStatusRepository implements StatusRepository {
     @Override
     public Page<GenerationRecord> findGenerationsByRequestId(String requestId, int pageIndex, int pageSize) {
         PanacheQuery<GenerationEntity> query = generationRepository.find("request.requestId",
-            Sort.by("dbId"), requestId);
+            Sort.descending("dbId"), requestId);
         query.page(pageIndex, pageSize);
         List<GenerationRecord> records = query.list().stream().map(generationMapper::toDto).toList();
 
@@ -219,12 +219,9 @@ public class PanacheStatusRepository implements StatusRepository {
             entity.setUpdated(record.getUpdated());
             entity.setFinished(record.getFinished());
             entity.setStatus(record.getStatus());
-            entity.setResult(record.getResult());
-            entity.setReason(record.getReason());
             entity.setTargetType(record.getTargetType());
             entity.setTargetIdentifier(record.getTargetIdentifier());
             entity.setChildEnhancementsStatus(record.getChildEnhancementsStatus());
-            entity.setLatestResult(record.getLatestResult());
 
             if (record.getRequestId() != null) {
                 RequestEntity req = requestRepository.find("requestId", record.getRequestId()).firstResult();
@@ -357,7 +354,7 @@ public class PanacheStatusRepository implements StatusRepository {
 
     @Override
     public Page<EnhancementRecord> findAllEnhancements(int pageIndex, int pageSize) {
-        PanacheQuery<EnhancementEntity> query = enhancementRepository.findAll(Sort.by("dbId"));
+        PanacheQuery<EnhancementEntity> query = enhancementRepository.findAll(Sort.descending("dbId"));
         query.page(pageIndex, pageSize);
         List<EnhancementRecord> records = query.list().stream().map(enhancementMapper::toDto).toList();
 
@@ -434,8 +431,6 @@ public class PanacheStatusRepository implements StatusRepository {
         enhancementEntity.setUpdated(enhancementRecord.getUpdated());
         enhancementEntity.setFinished(enhancementRecord.getFinished());
         enhancementEntity.setStatus(enhancementRecord.getStatus());
-        enhancementEntity.setResult(enhancementRecord.getResult());
-        enhancementEntity.setReason(enhancementRecord.getReason());
 
         if (enhancementRecord.getEnhancerOptions() != null) {
             if (enhancementEntity.getEnhancerOptions() == null) {
@@ -489,7 +484,8 @@ public class PanacheStatusRepository implements StatusRepository {
         generationRunRepository.find("runId", record.getId()).firstResultOptional().ifPresent(entity -> {
             entity.setAttemptNumber(record.getAttemptNumber());
             entity.setState(record.getState());
-            entity.setReason(record.getReason());
+            entity.setErrorResult(record.getErrorResult());
+            entity.setUpstreamReason(record.getUpstreamReason());
             entity.setMessage(record.getMessage());
             entity.setStartTime(record.getStartTime());
             entity.setCompletionTime(record.getCompletionTime());
@@ -538,7 +534,8 @@ public class PanacheStatusRepository implements StatusRepository {
         enhancementRunRepository.find("runId", record.getId()).firstResultOptional().ifPresent(entity -> {
             entity.setAttemptNumber(record.getAttemptNumber());
             entity.setState(record.getState());
-            entity.setReason(record.getReason());
+            entity.setErrorResult(record.getErrorResult());
+            entity.setUpstreamReason(record.getUpstreamReason());
             entity.setMessage(record.getMessage());
             entity.setStartTime(record.getStartTime());
             entity.setCompletionTime(record.getCompletionTime());

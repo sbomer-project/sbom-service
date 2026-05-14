@@ -13,9 +13,8 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
-import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationResult;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.GenerationStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RequestStatus;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
@@ -29,6 +28,7 @@ import org.jboss.sbomer.sbom.service.core.port.spi.RequestsFinishedNotifier;
 import org.jboss.sbomer.sbom.service.core.port.spi.StatusRepository;
 import org.jboss.sbomer.sbom.service.core.port.spi.enhancement.EnhancementScheduler;
 import org.jboss.sbomer.sbom.service.core.port.spi.generation.GenerationScheduler;
+import org.jboss.sbomer.sbom.service.core.utility.ErrorMapper;
 import org.jboss.sbomer.sbom.service.core.utility.TsidUtility;
 
 import io.opentelemetry.instrumentation.annotations.WithSpan;
@@ -48,12 +48,13 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
     RequestsFinishedNotifier requestsFinishedNotifier;
     FailureNotifier failureNotifier;
     RunManagement runManagement;
+    AutomaticRetryService automaticRetryService;
 
     @Inject
     public SbomService(GenerationScheduler generationScheduler, EnhancementScheduler enhancementScheduler,
             SbomMapper sbomMapper, StatusRepository statusRepository, RecipeBuilder recipeBuilder,
             RequestsFinishedNotifier requestsFinishedNotifier, FailureNotifier failureNotifier,
-            RunManagement runManagement) {
+            RunManagement runManagement, AutomaticRetryService automaticRetryService) {
         this.generationScheduler = generationScheduler;
         this.enhancementScheduler = enhancementScheduler;
         this.sbomMapper = sbomMapper;
@@ -62,6 +63,7 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
         this.requestsFinishedNotifier = requestsFinishedNotifier;
         this.failureNotifier = failureNotifier;
         this.runManagement = runManagement;
+        this.automaticRetryService = automaticRetryService;
     }
 
     // Create recipes for each generation requested from the source and schedule
@@ -146,9 +148,11 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             case "FINISHED":
                 // Find or create active run and complete it
                 String finishedRunId = findOrCreateActiveGenerationRun(generationId);
-                GenerationResult successResult = GenerationResult.fromCode(generationUpdate.getData().getResultCode())
-                        .orElse(GenerationResult.ERR_GENERAL);
-                runManagement.completeGenerationRun(finishedRunId, successResult, "Generation completed");
+                int resultCode = generationUpdate.getData().getResultCode();
+                
+                // Convert result code to canonical error (null for success)
+                ErrorResult errorResult = (resultCode == 0) ? null : ErrorMapper.fromGenerationResultCode(resultCode);
+                runManagement.completeGenerationRun(finishedRunId, errorResult, "Generation completed");
 
                 // Update SBOM URLs (still needed as this is domain-specific data)
                 GenerationRecord finishedGenerationRecord = statusRepository.findGenerationById(generationId);
@@ -161,10 +165,25 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             case "FAILED":
                 // Find or create active run and complete it with failure
                 String failedRunId = findOrCreateActiveGenerationRun(generationId);
-                GenerationResult failureResult = GenerationResult.fromCode(generationUpdate.getData().getResultCode())
-                        .orElse(GenerationResult.ERR_GENERAL);
+                int failureCode = generationUpdate.getData().getResultCode();
                 String failureReason = generationUpdate.getData().getReason();
-                runManagement.completeGenerationRun(failedRunId, failureResult, failureReason);
+                
+                // Convert to canonical error code
+                ErrorResult failureError = ErrorMapper.fromGenerationResultCode(failureCode);
+                String upstreamReason = failureReason != null ? failureReason : "Unknown";
+                
+                log.error("Generation failed: generationId={} canonicalError={} resultCode={} upstreamReason={} retryable={}",
+                          generationId, failureError, failureCode, upstreamReason,
+                          failureError.isRetryable());
+                
+                runManagement.completeGenerationRun(failedRunId, failureError, failureReason);
+                
+                // Try automatic immediate retry
+                boolean retried = automaticRetryService.tryRetryGeneration(generationId, failureError);
+                if (!retried) {
+                    log.info("Generation {} will not be retried: canonicalError={} resultCode={}",
+                             generationId, failureError, failureCode);
+                }
                 break;
         }
     }
@@ -198,10 +217,11 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             case "FINISHED":
                 // Find or create active run and complete it
                 String finishedRunId = findOrCreateActiveEnhancementRun(enhancementId);
-                EnhancementResult successResult = EnhancementResult
-                        .fromCode(enhancementUpdate.getData().getResultCode())
-                        .orElse(EnhancementResult.ERR_GENERAL);
-                runManagement.completeEnhancementRun(finishedRunId, successResult, "Enhancement completed");
+                int resultCode = enhancementUpdate.getData().getResultCode();
+                
+                // Convert result code to canonical error (null for success)
+                ErrorResult errorResult = (resultCode == 0) ? null : ErrorMapper.fromEnhancementResultCode(resultCode);
+                runManagement.completeEnhancementRun(finishedRunId, errorResult, "Enhancement completed");
 
                 // Update SBOM URLs (still needed as this is domain-specific data)
                 EnhancementRecord finishedEnhancementRecord = statusRepository.findEnhancementById(enhancementId);
@@ -216,11 +236,25 @@ public class SbomService implements GenerationProcessor, GenerationStatusProcess
             case "FAILED":
                 // Find or create active run and complete it with failure
                 String failedRunId = findOrCreateActiveEnhancementRun(enhancementId);
-                EnhancementResult failureResult = EnhancementResult
-                        .fromCode(enhancementUpdate.getData().getResultCode())
-                        .orElse(EnhancementResult.ERR_GENERAL);
+                int failureCode = enhancementUpdate.getData().getResultCode();
                 String failureReason = enhancementUpdate.getData().getReason();
-                runManagement.completeEnhancementRun(failedRunId, failureResult, failureReason);
+                
+                // Convert to canonical error code
+                ErrorResult failureError = ErrorMapper.fromEnhancementResultCode(failureCode);
+                String upstreamReason = failureReason != null ? failureReason : "Unknown";
+                
+                log.error("Enhancement failed: enhancementId={} canonicalError={} resultCode={} upstreamReason={} retryable={}",
+                          enhancementId, failureError, failureCode, upstreamReason,
+                          failureError.isRetryable());
+                
+                runManagement.completeEnhancementRun(failedRunId, failureError, failureReason);
+                
+                // Try automatic immediate retry
+                boolean retried = automaticRetryService.tryRetryEnhancement(enhancementId, failureError);
+                if (!retried) {
+                    log.info("Enhancement {} will not be retried: canonicalError={} resultCode={}",
+                             enhancementId, failureError, failureCode);
+                }
                 break;
         }
     }

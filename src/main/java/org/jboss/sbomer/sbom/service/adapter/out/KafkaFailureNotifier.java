@@ -64,14 +64,15 @@ public class KafkaFailureNotifier implements FailureNotifier {
                 .setErrorData(errorData)
                 .build();
 
-        // Log the action for observability
+        // Log the action for observability with canonical error code
         String eventType = (sourceEvent != null) ? sourceEvent.getClass().getSimpleName() : "N/A (initial trigger)";
-        log.error("Publishing a failure notification for event of type '{}' with correlationId '{}'. Reason: {}", eventType, correlationId, failure.getReason());
+        log.error("Publishing failure notification: result={} reason=\"{}\" sourceEventType={} correlationId={}", 
+                  failure.getErrorCode(), failure.getReason(), eventType, correlationId);
 
         // Send the event to the Kafka topic
         emitter.send(pf);
 
-        log.error("Failure notification sent successfully to Kafka topic 'sbomer.errors'.");
+        log.debug("Failure notification sent successfully to Kafka topic 'sbomer.errors' with canonical error code: {}", failure.getErrorCode());
     }
 
     /**

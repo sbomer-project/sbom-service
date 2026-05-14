@@ -2,7 +2,7 @@ package org.jboss.sbomer.sbom.service.adapter.out.persistence.domain.entity;
 
 import java.time.Instant;
 
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.RunState;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -55,17 +55,25 @@ public class EnhancementRunEntity extends PanacheEntityBase {
     private RunState state;
 
     /**
-     * The specific result/reason code for this run.
-     * Null while running, populated on completion.
+     * Canonical error result code.
+     * Null while running or on success, populated on failure.
      */
     @Enumerated(EnumType.STRING)
-    private EnhancementResult reason;
+    @Column(name = "error_result")
+    private ErrorResult errorResult;
 
     /**
      * Human-readable error message or context.
      */
     @Column(length = 1000)
     private String message;
+
+    /**
+     * Raw upstream reason from external worker (e.g., "TaskRunFailed").
+     * Preserved for diagnostics without being the primary error identity.
+     */
+    @Column(name = "upstream_reason", length = 500)
+    private String upstreamReason;
 
     /**
      * When this run started executing.

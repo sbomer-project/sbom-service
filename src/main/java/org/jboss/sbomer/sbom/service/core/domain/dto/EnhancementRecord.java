@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 
-import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementResult;
 import org.jboss.sbomer.sbom.service.core.domain.enums.EnhancementStatus;
 
 import lombok.EqualsAndHashCode;
@@ -36,11 +35,8 @@ public class EnhancementRecord {
     private Instant updated;
     private Instant finished;
     private EnhancementStatus status;
-    private Integer result;
-    private String reason;
     private String requestId;
     private Collection<String> enhancedSbomUrls;
     private String generationId;
-    private EnhancementResult latestResult;
     private Collection<EnhancementRunRecord> runs;
 }
