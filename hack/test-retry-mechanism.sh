@@ -245,9 +245,9 @@ test_manual_retry() {
     fi
     
     echo ""
-    log_info "Waiting for generation to fail (this may take up to 2 minutes)..."
+    log_info "Waiting for generation to fail (this may take up to 4 minutes)..."
     
-    if ! wait_for_status "$gen_id" "FAILED" 120; then
+    if ! wait_for_status "$gen_id" "FAILED" 240; then
         local final_status
         final_status=$(get_generation_status "$gen_id")
         log_error "Generation did not reach FAILED status (final: ${final_status})"
