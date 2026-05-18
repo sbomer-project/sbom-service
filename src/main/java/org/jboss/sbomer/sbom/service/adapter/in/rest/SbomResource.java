@@ -31,10 +31,12 @@ import org.jboss.sbomer.sbom.service.core.domain.dto.EnhancementRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.GenerationRunRecord;
 import org.jboss.sbomer.sbom.service.core.domain.dto.RequestRecord;
+import org.jboss.sbomer.sbom.service.core.domain.enums.ErrorResult;
 import org.jboss.sbomer.sbom.service.core.domain.exception.EntityNotFoundException;
 import org.jboss.sbomer.sbom.service.core.domain.exception.ValidationException;
 import org.jboss.sbomer.sbom.service.core.port.api.SbomAdministration;
 import org.jboss.sbomer.sbom.service.core.port.api.generation.GenerationProcessor;
+import org.jboss.sbomer.sbom.service.core.utility.RequestValidator;
 import org.jboss.sbomer.sbom.service.core.utility.TsidUtility;
 
 import jakarta.annotation.PostConstruct;
@@ -73,6 +75,9 @@ public class SbomResource {
     @Inject
     GenerationProcessor generationProcessor;
 
+    @Inject
+    RequestValidator requestValidator;
+
     /**
      * Validates that all required dependencies are properly injected.
      * This method is called after dependency injection is complete but before the bean is put into service.
@@ -81,6 +86,8 @@ public class SbomResource {
     void init() {
         Objects.requireNonNull(sbomAdministration, "SbomAdministration must be injected");
         Objects.requireNonNull(generationProcessor, "GenerationProcessor must be injected");
+        Objects.requireNonNull(requestValidator, "RequestValidator must be injected");
+
         log.debug("SbomResource initialized successfully with all dependencies");
     }
 
@@ -337,10 +344,19 @@ public class SbomResource {
         // 1. Translate the REST DTO into the internal Avro event object
         RequestsCreated requestsCreatedEvent = toRequestsCreatedEvent(request);
 
-        // 2. Pass the event to the core business logic (the "Port")
+        // 2. Validate before processing
+        List<GenerationRequestSpec> specs = requestsCreatedEvent.getData().getGenerationRequests();
+        RequestValidator.ValidationResult validationResult = requestValidator.validate(specs);
+
+        Optional<Response> validationResponse = handleValidationResult(validationResult);
+        if (validationResponse.isPresent()) {
+            return validationResponse.get();
+        }
+
+        // 3. Pass the event to the core business logic (the "Port")
         generationProcessor.processGenerations(requestsCreatedEvent);
 
-        // 3. Return a 202 Accepted response, as this is an async process.
+        // 4. Return a 202 Accepted response, as this is an async process.
         // We return the batch RequestId so the user can track it.
         String requestId = requestsCreatedEvent.getData().getRequestId();
         log.info("Successfully triggered generation with request ID: {}", requestId);
@@ -447,4 +463,36 @@ public class SbomResource {
                 .setHandlerProvidedOptions(dto.handlerProvidedOptions())
                 .build();
     }
+
+    /**
+     * Handles validation result and returns error response if validation failed.
+     * Uses Optional to avoid null handling and make the optionality explicit.
+     *
+     * @param validationResult The validation result to handle
+     * @return Optional containing error Response if validation failed, empty if valid
+     */
+    private Optional<Response> handleValidationResult(RequestValidator.ValidationResult validationResult) {
+        if (!validationResult.isValid()) {
+            log.warn("Request validation failed: {} errors found", validationResult.getErrors().size());
+
+            ErrorResponse errorResponse = new ErrorResponse(
+                ErrorResult.INVALID_REQUEST,
+                requestValidator.formatValidationErrors(validationResult),
+                Response.Status.BAD_REQUEST.getStatusCode(),
+                ErrorResult.INVALID_REQUEST.getCategory(),
+                null, // correlationId
+                null, // generationId
+                null, // enhancementId
+                Instant.now().toString()
+            );
+
+            return Optional.of(Response.status(Response.Status.BAD_REQUEST)
+                .entity(errorResponse)
+                .build());
+        }
+        
+        return Optional.empty(); // Validation passed
+    }
+
+
 }
