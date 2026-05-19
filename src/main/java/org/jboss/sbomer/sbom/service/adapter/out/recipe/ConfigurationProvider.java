@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.sbomer.sbom.service.adapter.out.recipe.config.RecipeConfig;
@@ -81,6 +83,17 @@ public class ConfigurationProvider {
 
     public RecipeConfig getRecipeForTargetType(String type) {
         return config.getRecipeForType(type);
+    }
+
+    /**
+     * Get all configured recipe types.
+     * 
+     * @return Set of target type names
+     */
+    public Set<String> getAllRecipeTypes() {
+        return config.getRecipes().stream()
+            .map(RecipeConfig::getType)
+            .collect(Collectors.toSet());
     }
 }
 

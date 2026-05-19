@@ -2,6 +2,7 @@ package org.jboss.sbomer.sbom.service.adapter.out.recipe;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jboss.sbomer.events.common.EnhancerSpec;
@@ -75,5 +76,25 @@ public class ConfigurableRecipeBuilder implements RecipeBuilder {
         }
 
         return builder.build();
+    }
+
+    @Override
+    public boolean hasRecipeFor(String type) {
+        if (type == null || type.isBlank()) {
+            return false;
+        }
+        
+        try {
+            configProvider.getRecipeForTargetType(type);
+            return true;
+        } catch (IllegalArgumentException e) {
+            log.debug("No recipe found for type: {}", type);
+            return false;
+        }
+    }
+
+    @Override
+    public Set<String> getSupportedTypes() {
+        return configProvider.getAllRecipeTypes();
     }
 }
