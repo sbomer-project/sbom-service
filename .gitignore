@@ -40,3 +40,6 @@ sbomer-platform/
 target/
 
 .DS_Store
+
+# Bob AI assistant working directory
+.bob/
